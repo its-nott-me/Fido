@@ -37,6 +37,7 @@ wss.on('connection', (ws) => {
         case 'join': {
           const sessionId = message.sessionId || 'default-session';
           peerId = message.peerId;
+          ws.peerId = peerId;
 
           if (!sessions.has(sessionId)) {
             sessions.set(sessionId, {
@@ -61,6 +62,11 @@ wss.on('connection', (ws) => {
             session.host = peerId;
           }
 
+          // Get list of all peer IDs
+          const peers = Array.from(session.clients)
+            .map(c => c.peerId)
+            .filter(Boolean);
+
           // Send current state to new client
           ws.send(JSON.stringify({
             type: 'session-state',
@@ -69,63 +75,78 @@ wss.on('connection', (ws) => {
             isHost: session.host === peerId,
             version: session.version,
             state: session.state,
-            peers: Array.from(session.clients).map(c => c.peerId).filter(Boolean)
+            peers
           }));
 
-          // Notify others
+          // Notify others about new peer
           broadcast(sessionId, {
             type: 'peer-joined',
             peerId,
-            peers: Array.from(session.clients).map(c => c.peerId).filter(Boolean)
+            peers
           }, ws);
 
           break;
         }
 
-        case 'command': {
-          if (!currentSession) break;
-          
+        // WebRTC Signaling messages
+        case 'webrtc-offer': {
+          // Forward offer to target peer
           const session = sessions.get(currentSession);
-          session.version = message.version;
-          session.state = message.state;
+          if (!session) break;
 
-          // Broadcast to all other clients
-          broadcast(currentSession, {
-            type: 'command',
-            version: message.version,
-            state: message.state,
-            peerId: message.peerId
-          }, ws);
+          const targetWs = Array.from(session.clients).find(
+            c => c.peerId === message.targetPeerId
+          );
+
+          if (targetWs && targetWs.readyState === 1) {
+            targetWs.send(JSON.stringify({
+              type: 'webrtc-offer',
+              offer: message.offer,
+              fromPeerId: peerId
+            }));
+          }
           break;
         }
 
-        case 'sync-snapshot': {
-          if (!currentSession) break;
+        case 'webrtc-answer': {
+          // Forward answer to target peer
+          const session = sessions.get(currentSession);
+          if (!session) break;
 
-          // Host broadcasts sync snapshot
-          broadcast(currentSession, {
-            type: 'sync-snapshot',
-            position: message.position,
-            playing: message.playing,
-            timestamp: message.timestamp,
-            version: message.version
-          }, ws);
+          const targetWs = Array.from(session.clients).find(
+            c => c.peerId === message.targetPeerId
+          );
+
+          if (targetWs && targetWs.readyState === 1) {
+            targetWs.send(JSON.stringify({
+              type: 'webrtc-answer',
+              answer: message.answer,
+              fromPeerId: peerId
+            }));
+          }
           break;
         }
 
-        case 'clock-ping': {
-          // Immediately respond with pong
-          ws.send(JSON.stringify({
-            type: 'clock-pong',
-            clientSendTime: message.timestamp,
-            serverReceiveTime: Date.now(),
-            serverSendTime: Date.now()
-          }));
+        case 'webrtc-ice-candidate': {
+          // Forward ICE candidate to target peer
+          const session = sessions.get(currentSession);
+          if (!session) break;
+
+          const targetWs = Array.from(session.clients).find(
+            c => c.peerId === message.targetPeerId
+          );
+
+          if (targetWs && targetWs.readyState === 1) {
+            targetWs.send(JSON.stringify({
+              type: 'webrtc-ice-candidate',
+              candidate: message.candidate,
+              fromPeerId: peerId
+            }));
+          }
           break;
         }
 
         case 'heartbeat': {
-          // Just acknowledge
           ws.send(JSON.stringify({ type: 'heartbeat-ack' }));
           break;
         }
@@ -141,14 +162,20 @@ wss.on('connection', (ws) => {
       if (session) {
         session.clients.delete(ws);
 
-        // If host left, elect new host
-        if (session.host === peerId && session.clients.size > 0) {
-          const newHost = Array.from(session.clients)[0].peerId;
+        // Get remaining peer IDs
+        const remainingPeers = Array.from(session.clients)
+          .map(c => c.peerId)
+          .filter(Boolean);
+
+        // If host left, elect new host (highest peer ID)
+        if (session.host === peerId && remainingPeers.length > 0) {
+          const newHost = remainingPeers.sort().reverse()[0];
           session.host = newHost;
 
           broadcast(currentSession, {
             type: 'host-changed',
-            newHost
+            newHost,
+            peers: remainingPeers
           });
         }
 
@@ -158,15 +185,17 @@ wss.on('connection', (ws) => {
         } else {
           broadcast(currentSession, {
             type: 'peer-left',
-            peerId
+            peerId,
+            peers: remainingPeers
           });
         }
       }
     }
   });
 
-  // Store peerId on connection for later reference
-  ws.peerId = null;
+  ws.onerror = (error) => {
+    console.error('WebSocket error:', error);
+  };
 });
 
 const PORT = 3001;

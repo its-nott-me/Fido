@@ -1,3 +1,5 @@
+import { WebRTCManager } from './WebRTCManager';
+
 interface ClockSample {
   offset: number;
   rtt: number;
@@ -9,22 +11,29 @@ export class ClockSync {
   private maxSamples = 20;
   private currentOffset = 0;
   private confidence = 0;
-  private ws: WebSocket | null = null;
+  private webrtc: WebRTCManager | null = null;
+  private hostPeerId: string | null = null;
   private pingInterval: number | null = null;
 
-  constructor(ws: WebSocket) {
-    this.ws = ws;
+  setWebRTC(webrtc: WebRTCManager, hostPeerId: string) {
+    this.webrtc = webrtc;
+    this.hostPeerId = hostPeerId;
     this.startPinging();
   }
 
   private startPinging() {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+    }
+
     // Ping every 2 seconds
     this.pingInterval = window.setInterval(() => {
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({
+      if (this.webrtc && this.hostPeerId && 
+          this.webrtc.isConnectedTo(this.hostPeerId)) {
+        this.webrtc.sendTo(this.hostPeerId, {
           type: 'clock-ping',
           timestamp: Date.now()
-        }));
+        });
       }
     }, 2000);
   }
@@ -60,6 +69,13 @@ export class ClockSync {
       // High stdDev = low confidence
       this.confidence = Math.max(0, Math.min(1, 1 - (stdDev / 100)));
     }
+  }
+
+  updateHost(hostPeerId: string) {
+    this.hostPeerId = hostPeerId;
+    this.samples = [];
+    this.currentOffset = 0;
+    this.confidence = 0;
   }
 
   getOffset(): number {

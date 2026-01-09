@@ -4,15 +4,18 @@ import { SyncEngine } from './SyncEngine';
 interface VideoPlayerProps {
   syncEngine: SyncEngine | null;
   isHost: boolean;
+  syncEnabled: boolean; 
+  onSyncToggle: (enabled: boolean) => void; 
 }
 
 type DriftStrategy = 'locked' | 'soft-convergence' | 'show-ui' | 'force-resync';
 
-export default function VideoPlayer({ syncEngine, isHost }: VideoPlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+export default function VideoPlayer({ syncEngine, isHost, syncEnabled, onSyncToggle }: VideoPlayerProps) {  const videoRef = useRef<HTMLVideoElement>(null);
   const [drift, setDrift] = useState(0);
   const [strategy, setStrategy] = useState<DriftStrategy>('locked');
   const [showResyncUI, setShowResyncUI] = useState(false);
+  const [buffering, setBuffering] = useState(false);
+  const [bufferHealth, setBufferHealth] = useState(1);
 
   useEffect(() => {
     if (videoRef.current && syncEngine) {
@@ -22,6 +25,11 @@ export default function VideoPlayer({ syncEngine, isHost }: VideoPlayerProps) {
         setDrift(newDrift);
         setStrategy(newStrategy);
         setShowResyncUI(newStrategy === 'show-ui' || newStrategy === 'force-resync');
+      };
+
+      syncEngine.onBufferStatus = (isBuffering, health) => {
+        setBuffering(isBuffering);
+        setBufferHealth(health);
       };
     }
   }, [syncEngine]);
@@ -72,6 +80,59 @@ export default function VideoPlayer({ syncEngine, isHost }: VideoPlayerProps) {
         />
       </video>
 
+      {/* Buffer Health Bar */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 3,
+          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+          borderRadius: '8px 8px 0 0',
+          overflow: 'hidden'
+        }}
+      >
+        <div
+          style={{
+            height: '100%',
+            width: `${bufferHealth * 100}%`,
+            backgroundColor: bufferHealth > 0.6 ? '#4ade80' : bufferHealth > 0.3 ? '#facc15' : '#ef4444',
+            transition: 'width 0.3s, background-color 0.3s'
+          }}
+        />
+      </div>
+
+      {/* Buffering Overlay */}
+      {buffering && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            padding: '16px 24px',
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12
+          }}
+        >
+          <div
+            style={{
+              width: 20,
+              height: 20,
+              border: '3px solid rgba(255, 255, 255, 0.3)',
+              borderTop: '3px solid white',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }}
+          />
+          <span>Buffering for smooth playback...</span>
+        </div>
+      )}
+
       {/* Sync Quality Indicator */}
       <div
         style={{
@@ -103,6 +164,49 @@ export default function VideoPlayer({ syncEngine, isHost }: VideoPlayerProps) {
           }}
         >
           HOST
+        </div>
+      )}
+
+
+      {!isHost && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 16,
+            left: 16,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 12px',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            borderRadius: 6,
+            fontSize: 12,
+            cursor: 'pointer'
+          }}
+          onClick={() => onSyncToggle(!syncEnabled)}
+        >
+          <div style={{
+            width: 32,
+            height: 18,
+            backgroundColor: syncEnabled ? '#10b981' : '#6b7280',
+            borderRadius: 9,
+            position: 'relative',
+            transition: 'background-color 0.2s'
+          }}>
+            <div style={{
+              width: 14,
+              height: 14,
+              backgroundColor: 'white',
+              borderRadius: '50%',
+              position: 'absolute',
+              top: 2,
+              left: syncEnabled ? 16 : 2,
+              transition: 'left 0.2s'
+            }} />
+          </div>
+          <span style={{ fontWeight: 600 }}>
+            {syncEnabled ? 'Synced' : 'Independent'}
+          </span>
         </div>
       )}
 
@@ -162,7 +266,15 @@ export default function VideoPlayer({ syncEngine, isHost }: VideoPlayerProps) {
         <div>Drift: {drift.toFixed(3)}s</div>
         <div>Strategy: {strategy}</div>
         <div>Playback Rate: {videoRef.current?.playbackRate.toFixed(3) || '1.000'}</div>
+        <div>Buffer Health: {(bufferHealth * 100).toFixed(0)}%</div>
+        <div>Buffering: {buffering ? 'YES' : 'NO'}</div>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

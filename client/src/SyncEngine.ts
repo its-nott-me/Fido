@@ -1,4 +1,5 @@
 import { ClockSync } from './ClockSync';
+import { WebRTCManager } from './WebRTCManager';
 
 export interface SyncState {
   playing: boolean;
@@ -18,7 +19,7 @@ type DriftStrategy = 'locked' | 'soft-convergence' | 'show-ui' | 'force-resync';
 export class SyncEngine {
   private videoElement: HTMLVideoElement | null = null;
   private clockSync: ClockSync;
-  private ws: WebSocket;
+  private webrtc: WebRTCManager;
   private isHost: boolean = false;
   private version: number = 0;
   private snapshotInterval: number | null = null;
@@ -26,14 +27,65 @@ export class SyncEngine {
   private currentDrift: number = 0;
   private targetPlaybackRate: number = 1.0;
   private isConverging: boolean = false;
+  private bufferCheckPending: boolean = false;
+  private syncEnabled: boolean = true;
 
   // Callbacks
   onDriftChange?: (drift: number, strategy: DriftStrategy) => void;
   onStateChange?: (state: SyncState) => void;
+  onBufferStatus?: (buffering: boolean, bufferHealth: number) => void;
 
-  constructor(ws: WebSocket, clockSync: ClockSync) {
-    this.ws = ws;
+  constructor(webrtc: WebRTCManager, clockSync: ClockSync) {
+    this.webrtc = webrtc;
     this.clockSync = clockSync;
+
+    // Handle incoming data channel messages
+    this.webrtc.onDataChannelMessage = (fromPeerId, message) => {
+      this.handleDataChannelMessage(fromPeerId, message);
+    };
+  }
+
+  private handleDataChannelMessage(fromPeerId: string, message: any) {
+    switch (message.type) {
+      case 'clock-ping':
+        // Respond to clock ping
+        if (this.isHost) {
+          const now = Date.now();
+          this.webrtc.sendTo(fromPeerId, {
+            type: 'clock-pong',
+            clientSendTime: message.timestamp,
+            serverReceiveTime: now,
+            serverSendTime: now
+          });
+        }
+        break;
+
+      case 'clock-pong':
+        this.clockSync.handlePong(
+          message.clientSendTime,
+          message.serverReceiveTime,
+          message.serverSendTime
+        );
+        break;
+
+      case 'sync-snapshot':
+        this.handleSyncSnapshot({
+          position: message.position,
+          playing: message.playing,
+          timestamp: message.timestamp,
+          version: message.version
+        });
+        break;
+
+      case 'command':
+        this.handleCommand(message.state, message.version);
+        break;
+      
+      case 'request-sync':
+        if(this.isHost){
+          this.broadcastCommand();
+        }
+    }
   }
 
   setVideoElement(video: HTMLVideoElement) {
@@ -43,6 +95,8 @@ export class SyncEngine {
     video.addEventListener('play', this.handleLocalPlay);
     video.addEventListener('pause', this.handleLocalPause);
     video.addEventListener('seeked', this.handleLocalSeek);
+    video.addEventListener('waiting', this.handleBuffering);
+    video.addEventListener('canplay', this.handleCanPlay);
   }
 
   setIsHost(isHost: boolean) {
@@ -56,22 +110,37 @@ export class SyncEngine {
     }
   }
 
+  setSyncEnabled(enabled: boolean) {
+    this.syncEnabled = enabled;
+    
+    if (!enabled) {
+      // Stop corrections when disabled
+      this.stopSoftConvergence();
+      if (this.driftCheckInterval) {
+        clearInterval(this.driftCheckInterval);
+        this.driftCheckInterval = null;
+      }
+    } else if (!this.isHost) {
+      // Resume drift correction when re-enabled
+      this.startDriftCorrection();
+      this.forceResync();
+    }
+  }
+
   private startBroadcastingSnapshots() {
-    // Host broadcasts sync snapshots at 2Hz
+    // Host broadcasts sync snapshots at 2Hz via WebRTC
     this.snapshotInterval = window.setInterval(() => {
       if (!this.videoElement) return;
 
-      const snapshot: SyncSnapshot = {
+      const snapshot = {
+        type: 'sync-snapshot',
         position: this.videoElement.currentTime,
         playing: !this.videoElement.paused,
-        timestamp: this.clockSync.getServerTime(),
+        timestamp: Date.now(),
         version: this.version
       };
 
-      this.ws.send(JSON.stringify({
-        type: 'sync-snapshot',
-        ...snapshot
-      }));
+      this.webrtc.broadcast(snapshot);
     }, 500);
   }
 
@@ -86,12 +155,109 @@ export class SyncEngine {
     // Check drift every 500ms
     this.driftCheckInterval = window.setInterval(() => {
       this.checkAndCorrectDrift();
+      this.checkBufferHealth();
     }, 500);
   }
 
+  private checkBufferHealth() {
+    if (!this.videoElement || this.videoElement.paused) return;
+
+    const buffered = this.videoElement.buffered;
+    if (buffered.length === 0) {
+      this.onBufferStatus?.(true, 0);
+      return;
+    }
+
+    const currentTime = this.videoElement.currentTime;
+    let bufferEnd = 0;
+
+    // Find buffer range that contains current time
+    for (let i = 0; i < buffered.length; i++) {
+      if (buffered.start(i) <= currentTime && currentTime <= buffered.end(i)) {
+        bufferEnd = buffered.end(i);
+        break;
+      }
+    }
+
+    const bufferAhead = bufferEnd - currentTime;
+    const bufferHealth = Math.min(bufferAhead / 5, 1); // 5 seconds = 100% health
+
+    this.onBufferStatus?.(bufferAhead < 2, bufferHealth);
+  }
+
+  private async checkBufferBeforePlay(): Promise<boolean> {
+    if (!this.videoElement) return false;
+
+    const buffered = this.videoElement.buffered;
+    if (buffered.length === 0) return false;
+
+    const currentTime = this.videoElement.currentTime;
+    let bufferAhead = 0;
+
+    for (let i = 0; i < buffered.length; i++) {
+      if (buffered.start(i) <= currentTime && currentTime <= buffered.end(i)) {
+        bufferAhead = buffered.end(i) - currentTime;
+        break;
+      }
+    }
+
+    // Need at least 3 seconds buffered
+    if (bufferAhead < 3) {
+      this.bufferCheckPending = true;
+      this.onBufferStatus?.(true, bufferAhead / 5);
+
+      return new Promise((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (!this.videoElement) {
+            clearInterval(checkInterval);
+            resolve(false);
+            return;
+          }
+
+          const buffered = this.videoElement.buffered;
+          let newBufferAhead = 0;
+
+          for (let i = 0; i < buffered.length; i++) {
+            const start = buffered.start(i);
+            const end = buffered.end(i);
+            if (start <= this.videoElement.currentTime && 
+                this.videoElement.currentTime <= end) {
+              newBufferAhead = end - this.videoElement.currentTime;
+              break;
+            }
+          }
+
+          if (newBufferAhead >= 3) {
+            clearInterval(checkInterval);
+            this.bufferCheckPending = false;
+            this.onBufferStatus?.(false, newBufferAhead / 5);
+            resolve(true);
+          }
+        }, 100);
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          this.bufferCheckPending = false;
+          resolve(false);
+        }, 10000);
+      });
+    }
+
+    return true;
+  }
+
+  private handleBuffering = () => {
+    this.onBufferStatus?.(true, 0);
+  };
+
+  private handleCanPlay = () => {
+    if (!this.bufferCheckPending) {
+      this.checkBufferHealth();
+    }
+  };
+
   private checkAndCorrectDrift() {
-    // This is called after receiving sync snapshots
-    // The actual drift calculation happens in handleSyncSnapshot
     if (!this.videoElement || this.clockSync.getConfidence() < 0.5) {
       return;
     }
@@ -100,19 +266,15 @@ export class SyncEngine {
     let strategy: DriftStrategy = 'locked';
 
     if (absDrift < 0.4) {
-      // Less than 400ms - locked, do nothing
       strategy = 'locked';
       this.stopSoftConvergence();
     } else if (absDrift < 2.0) {
-      // 400ms to 2s - soft convergence
       strategy = 'soft-convergence';
       this.applySoftConvergence(this.currentDrift);
     } else if (absDrift < 12.0) {
-      // 2s to 12s - show UI
       strategy = 'show-ui';
       this.stopSoftConvergence();
     } else {
-      // Over 12s - force resync
       strategy = 'force-resync';
       this.stopSoftConvergence();
     }
@@ -124,16 +286,13 @@ export class SyncEngine {
     if (!this.videoElement || this.isConverging) return;
 
     this.isConverging = true;
-    const maxRateAdjust = 0.03; // Up to 3% speed change
+    const maxRateAdjust = 0.03;
     
-    // Calculate proportional rate adjustment
     const rateAdjust = Math.min(maxRateAdjust, Math.abs(drift) / 10);
     this.targetPlaybackRate = drift > 0 ? 1 + rateAdjust : 1 - rateAdjust;
 
-    // Smoothly ramp to target rate
     this.smoothRateTransition(this.videoElement.playbackRate, this.targetPlaybackRate, 500);
 
-    // After some time, ramp back down
     setTimeout(() => {
       if (this.videoElement && Math.abs(this.currentDrift) < 0.5) {
         this.smoothRateTransition(this.videoElement.playbackRate, 1.0, 500);
@@ -152,7 +311,6 @@ export class SyncEngine {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
       
-      // Cubic ease
       const eased = progress < 0.5
         ? 4 * progress * progress * progress
         : 1 - Math.pow(-2 * progress + 2, 3) / 2;
@@ -175,43 +333,64 @@ export class SyncEngine {
   }
 
   handleSyncSnapshot(snapshot: SyncSnapshot) {
-    if (!this.videoElement || this.isHost) return;
+    if (!this.videoElement || this.isHost || !this.syncEnabled) return;
 
-    // Calculate expected position
     const now = this.clockSync.getServerTime();
-    const timeSinceSnapshot = (now - snapshot.timestamp) / 1000; // Convert to seconds
+    const timeSinceSnapshot = (now - snapshot.timestamp) / 1000;
     const expectedPosition = snapshot.position + (snapshot.playing ? timeSinceSnapshot : 0);
     
-    // Calculate drift
     this.currentDrift = this.videoElement.currentTime - expectedPosition;
 
-    // Update version
     if (snapshot.version > this.version) {
       this.version = snapshot.version;
     }
   }
 
-  handleCommand(state: SyncState, version: number) {
-    if (!this.videoElement || version <= this.version) return;
+handleCommand(state: SyncState, version: number) {
+  if (!this.videoElement || version <= this.version || !this.syncEnabled) return;
 
-    this.version = version;
+  this.version = version;
 
-    // Apply state atomically
+  // For pause commands, pause FIRST, then seek
+  if (!state.playing && !this.videoElement.paused) {
+    this.videoElement.pause();
+    
+    // Then seek if needed
     if (Math.abs(this.videoElement.currentTime - state.position) > 0.5) {
       this.videoElement.currentTime = state.position;
     }
-
-    if (state.playing && this.videoElement.paused) {
-      this.videoElement.play();
-    } else if (!state.playing && !this.videoElement.paused) {
-      this.videoElement.pause();
+  } 
+  // For play commands, seek first if needed, then play
+  else if (state.playing && this.videoElement.paused) {
+    if (Math.abs(this.videoElement.currentTime - state.position) > 0.5) {
+      this.videoElement.currentTime = state.position;
     }
-
-    this.onStateChange?.(state);
+    
+    this.videoElement.play().catch(err => {
+      console.warn('Autoplay prevented - user interaction required');
+      this.onStateChange?.({ ...state, playing: false });
+    });
+  }
+  // For position updates during playback
+  else if (Math.abs(this.videoElement.currentTime - state.position) > 0.5) {
+    this.videoElement.currentTime = state.position;
   }
 
-  private handleLocalPlay = () => {
+  this.onStateChange?.(state);
+}
+
+  private handleLocalPlay = async () => {
     if (!this.isHost || !this.videoElement) return;
+
+    // Check buffer before allowing play
+    const hasBuffer = await this.checkBufferBeforePlay();
+    
+    if (!hasBuffer) {
+      // Pause if buffer is insufficient
+      this.videoElement.pause();
+      return;
+    }
+
     this.broadcastCommand();
   };
 
@@ -235,20 +414,24 @@ export class SyncEngine {
       timestamp: Date.now()
     };
 
-    this.ws.send(JSON.stringify({
+    this.webrtc.broadcast({
       type: 'command',
       version: this.version,
       state
-    }));
+    });
 
     this.onStateChange?.(state);
   }
 
   forceResync() {
-    // Request current state from host
-    this.ws.send(JSON.stringify({
-      type: 'request-sync'
-    }));
+    if(!this.videoElement || this.isHost) return;
+
+    this.webrtc.broadcast({
+      type: 'request-sync',
+      fromPeerId: this.webrtc['peerId'],
+    })
+    // For now, just request from host via data channel
+    // In full implementation, would request explicit sync
   }
 
   destroy() {
@@ -262,6 +445,8 @@ export class SyncEngine {
       this.videoElement.removeEventListener('play', this.handleLocalPlay);
       this.videoElement.removeEventListener('pause', this.handleLocalPause);
       this.videoElement.removeEventListener('seeked', this.handleLocalSeek);
+      this.videoElement.removeEventListener('waiting', this.handleBuffering);
+      this.videoElement.removeEventListener('canplay', this.handleCanPlay);
     }
   }
 }
