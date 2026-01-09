@@ -5,12 +5,23 @@ interface VideoPlayerProps {
   syncEngine: SyncEngine | null;
   isHost: boolean;
   syncEnabled: boolean; 
-  onSyncToggle: (enabled: boolean) => void; 
+  onSyncToggle: (enabled: boolean) => void;
+  savedPosition: number | null;
+  onResumePosition: () => void;
+  onDismissResume: () => void;
 }
 
 type DriftStrategy = 'locked' | 'soft-convergence' | 'show-ui' | 'force-resync';
 
-export default function VideoPlayer({ syncEngine, isHost, syncEnabled, onSyncToggle }: VideoPlayerProps) {  const videoRef = useRef<HTMLVideoElement>(null);
+export default function VideoPlayer({ 
+  syncEngine, 
+  isHost, 
+  syncEnabled, 
+  onSyncToggle,
+  savedPosition,
+  onResumePosition,
+  onDismissResume
+}: VideoPlayerProps) {  const videoRef = useRef<HTMLVideoElement>(null);
   const [drift, setDrift] = useState(0);
   const [strategy, setStrategy] = useState<DriftStrategy>('locked');
   const [showResyncUI, setShowResyncUI] = useState(false);
@@ -130,6 +141,61 @@ export default function VideoPlayer({ syncEngine, isHost, syncEnabled, onSyncTog
             }}
           />
           <span>Buffering for smooth playback...</span>
+        </div>
+      )}
+
+      {savedPosition && savedPosition > 10 && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          padding: '24px',
+          backgroundColor: 'rgba(0, 0, 0, 0.95)',
+          borderRadius: 12,
+          minWidth: 320,
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.8)'
+        }}>
+          <div style={{ marginBottom: 16, fontSize: 18, fontWeight: 600 }}>
+            Resume where you left off?
+          </div>
+          <div style={{ marginBottom: 20, color: '#9ca3af', fontSize: 14 }}>
+            Last position: {Math.floor(savedPosition / 60)}:{Math.floor(savedPosition % 60).toString().padStart(2, '0')}
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button
+              onClick={onResumePosition}
+              style={{
+                flex: 1,
+                padding: '12px',
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: 14
+              }}
+            >
+              Resume
+            </button>
+            <button
+              onClick={onDismissResume}
+              style={{
+                flex: 1,
+                padding: '12px',
+                backgroundColor: '#374151',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: 14
+              }}
+            >
+              Start Over
+            </button>
+          </div>
         </div>
       )}
 

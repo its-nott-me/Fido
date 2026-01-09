@@ -12,8 +12,15 @@ export default function App() {
   const [connected, setConnected] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [syncEnabled, setSyncEnabled] = useState(true);
-const [hasInteracted, setHasInteracted] = useState(false); 
+  const [hasInteracted, setHasInteracted] = useState(false); 
+  const [savedPosition, setSavedPosition] = useState<number | null>(null); 
+  const [showResumeUI, setShowResumeUI] = useState(false);
   const [peerId] = useState(generatePeerId());
+  const [sessionId, setSessionId] = useState(() => {
+    // Get from URL or generate new
+    const params = new URLSearchParams(window.location.search);
+    return params.get('session') || `session-${Math.random().toString(36).substr(2, 9)}`;
+  });
   const [connectedPeers, setConnectedPeers] = useState<string[]>([]);
   const [webrtcConnections, setWebrtcConnections] = useState<string[]>([]);
   
@@ -39,6 +46,13 @@ const [hasInteracted, setHasInteracted] = useState(false);
       // Initialize sync engine
       syncEngineRef.current = new SyncEngine(webrtcRef.current, clockSyncRef.current);
 
+      syncEngineRef.current.setSessionId(sessionId);
+      const saved = syncEngineRef.current.getSavedPosition();
+      if (saved) {
+        setSavedPosition(saved);
+        setShowResumeUI(true);
+      }
+
       // Monitor WebRTC connection changes
       webrtcRef.current.onConnectionStateChange = (peerIdChanged, state) => {
         console.log(`WebRTC to ${peerIdChanged}: ${state}`);
@@ -48,7 +62,7 @@ const [hasInteracted, setHasInteracted] = useState(false);
       // Join session
       ws.send(JSON.stringify({
         type: 'join',
-        sessionId: 'default-session',
+        sessionId: sessionId,
         peerId
       }));
     };
@@ -165,25 +179,45 @@ const [hasInteracted, setHasInteracted] = useState(false);
     };
   }, [peerId]);
 
-    const handleJoinClick = async () => {
-      // Interact with video to enable autoplay
-      const videoElement = document.querySelector('video');
-      console.log('novideo')
-      if (videoElement) {
-        try {
-          await videoElement.play();
-          videoElement.pause();
-          setHasInteracted(true);
-        } catch (err) {
-          console.error('Failed to interact with video:', err);
-        }
-      }
-    };
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('session', sessionId);
+    window.history.replaceState({}, '', url.toString());
+  }, [sessionId]);
 
-    const handleSyncToggle = (enabled: boolean) => {
-      setSyncEnabled(enabled);
-      syncEngineRef.current?.setSyncEnabled(enabled);
-    };
+  const handleResumePosition = () => {
+    const videoElement = document.querySelector('video') as HTMLVideoElement;
+    if (videoElement && savedPosition) {
+      videoElement.currentTime = savedPosition;
+    }
+    setShowResumeUI(false);
+  };
+
+  const handleDismissResume = () => {
+    syncEngineRef.current?.clearSavedPosition();
+    setShowResumeUI(false);
+    setSavedPosition(null);
+  };
+
+  const handleJoinClick = async () => {
+    // Interact with video to enable autoplay
+    const videoElement = document.querySelector('video');
+    console.log('novideo')
+    if (videoElement) {
+      try {
+        await videoElement.play();
+        videoElement.pause();
+        setHasInteracted(true);
+      } catch (err) {
+        console.error('Failed to interact with video:', err);
+      }
+    }
+  };
+
+  const handleSyncToggle = (enabled: boolean) => {
+    setSyncEnabled(enabled);
+    syncEngineRef.current?.setSyncEnabled(enabled);
+  };
 
   return (
     <div style={{ padding: '2rem' }}>
@@ -223,6 +257,25 @@ const [hasInteracted, setHasInteracted] = useState(false);
         }}>
           Peer ID: {peerId.substring(0, 12)}...
         </div>
+
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(window.location.href);
+            alert('Session link copied! Share with others to watch together.');
+          }}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#8b5cf6',
+            color: 'white',
+            border: 'none',
+            borderRadius: 6,
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          📋 Share Session
+        </button>
       </div>
 
       {connected ? (
@@ -239,6 +292,9 @@ const [hasInteracted, setHasInteracted] = useState(false);
             isHost={isHost}
             syncEnabled={syncEnabled}
             onSyncToggle={handleSyncToggle}
+            savedPosition={showResumeUI ? savedPosition : null}
+            onResumePosition={handleResumePosition}
+            onDismissResume={handleDismissResume}
           />
 
           {/* Overlay */}
