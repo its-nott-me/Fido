@@ -232,7 +232,7 @@ export class SyncEngine {
     const bufferAhead = bufferEnd - currentTime;
     const bufferHealth = Math.min(bufferAhead / 5, 1); // 5 seconds = 100% health
 
-    this.onBufferStatus?.(bufferAhead < 2, bufferHealth);
+    this.onBufferStatus?.(bufferAhead < 4, bufferHealth);
   }
 
   private async checkBufferBeforePlay(): Promise<boolean> {
@@ -431,7 +431,7 @@ export class SyncEngine {
         this.videoElement.currentTime = state.position;
       }
 
-      this.videoElement.play().catch(err => {
+      this.videoElement.play().catch(() => {
         console.warn('Autoplay prevented - user interaction required');
         this.onStateChange?.({ ...state, playing: false });
       });

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { SyncEngine } from './SyncEngine';
+import api from './axios/axios';
 
 interface VideoPlayerProps {
   syncEngine: SyncEngine | null;
   isHost: boolean;
-  syncEnabled: boolean; 
+  syncEnabled: boolean;
   onSyncToggle: (enabled: boolean) => void;
   savedPosition: number | null;
   onResumePosition: () => void;
@@ -13,25 +14,33 @@ interface VideoPlayerProps {
 
 type DriftStrategy = 'locked' | 'soft-convergence' | 'show-ui' | 'force-resync';
 
-export default function VideoPlayer({ 
-  syncEngine, 
-  isHost, 
-  syncEnabled, 
+export default function VideoPlayer({
+  syncEngine,
+  isHost,
+  syncEnabled,
   onSyncToggle,
   savedPosition,
   onResumePosition,
   onDismissResume
-}: VideoPlayerProps) {  const videoRef = useRef<HTMLVideoElement>(null);
+}: VideoPlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [drift, setDrift] = useState(0);
   const [strategy, setStrategy] = useState<DriftStrategy>('locked');
   const [showResyncUI, setShowResyncUI] = useState(false);
   const [buffering, setBuffering] = useState(false);
   const [bufferHealth, setBufferHealth] = useState(1);
+  const [mediaId, setMediaId] = useState('VID_20231014_163002262.mp4');
+  const [mediaUrl, setMediaUrl] = useState('');
 
   useEffect(() => {
-    if (videoRef.current && syncEngine) {
-      syncEngine.setVideoElement(videoRef.current);
-      
+    getMediaUrl();
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video && syncEngine) {
+      syncEngine.setVideoElement(video);
+
       syncEngine.onDriftChange = (newDrift, newStrategy) => {
         setDrift(newDrift);
         setStrategy(newStrategy);
@@ -42,8 +51,12 @@ export default function VideoPlayer({
         setBuffering(isBuffering);
         setBufferHealth(health);
       };
+
+      return () => {
+        // Optional: Add cleanup if SyncEngine support it
+      };
     }
-  }, [syncEngine]);
+  }, [syncEngine, mediaUrl]);
 
   const handleResync = () => {
     syncEngine?.forceResync();
@@ -53,7 +66,6 @@ export default function VideoPlayer({
   const getSyncDots = () => {
     const absDrift = Math.abs(drift);
     let filledDots = 5;
-    
     if (absDrift > 5) filledDots = 1;
     else if (absDrift > 2) filledDots = 2;
     else if (absDrift > 1) filledDots = 3;
@@ -73,6 +85,16 @@ export default function VideoPlayer({
     ));
   };
 
+  const getMediaUrl = async () => {
+    try {
+      const response = await api.get(`/media/${mediaId}`);
+      setMediaUrl(response.data.url);
+      console.log(response.data.url);
+    } catch (error) {
+      console.error('Error fetching media URL:', error);
+    }
+  };
+
   return (
     <div style={{ position: 'relative' }}>
       <video
@@ -86,7 +108,7 @@ export default function VideoPlayer({
         }}
       >
         <source
-          src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+          src={mediaUrl ? mediaUrl : "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"}
           type="video/mp4"
         />
       </video>
@@ -294,7 +316,7 @@ export default function VideoPlayer({
           }}
         >
           <span style={{ fontSize: 14 }}>
-            {Math.abs(drift) > 12 
+            {Math.abs(drift) > 12
               ? `Severely out of sync (${Math.abs(drift).toFixed(1)}s)`
               : `Out of sync by ${Math.abs(drift).toFixed(1)}s`
             }

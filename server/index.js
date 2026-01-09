@@ -2,11 +2,13 @@ import express from 'express';
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
 import cors from 'cors';
+import mediaRouter from './routes/media.route.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+const PORT = 3001;
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
@@ -198,7 +200,8 @@ wss.on('connection', (ws) => {
   };
 });
 
-const PORT = 3001;
+app.use('/media', mediaRouter);
+
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
