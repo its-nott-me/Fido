@@ -9,6 +9,8 @@ export const env = {
     r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
     r2BucketName: process.env.R2_BUCKET_NAME,
     r2WorkerUrl: process.env.R2_WORKER_URL,
+    databaseUrl: process.env.DATABASE_URL,
+    jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
     // Server Configuration
     port: process.env.PORT || 3001
 };

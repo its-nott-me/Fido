@@ -5,6 +5,7 @@ import api from './axios/axios';
 interface VideoPlayerProps {
   syncEngine: SyncEngine | null;
   isHost: boolean;
+  mediaId: string | null;
   syncEnabled: boolean;
   onSyncToggle: (enabled: boolean) => void;
   savedPosition: number | null;
@@ -17,6 +18,7 @@ type DriftStrategy = 'locked' | 'soft-convergence' | 'show-ui' | 'force-resync';
 export default function VideoPlayer({
   syncEngine,
   isHost,
+  mediaId: initialMediaId,
   syncEnabled,
   onSyncToggle,
   savedPosition,
@@ -29,16 +31,22 @@ export default function VideoPlayer({
   const [showResyncUI, setShowResyncUI] = useState(false);
   const [buffering, setBuffering] = useState(false);
   const [bufferHealth, setBufferHealth] = useState(1);
-  const [mediaId, setMediaId] = useState('VID_20231014_163002262.mp4');
   const [mediaUrl, setMediaUrl] = useState('');
 
   useEffect(() => {
-    getMediaUrl();
-  }, []);
+    if (initialMediaId) {
+      // console.log('VideoPlayer: initialMediaId changed to:', initialMediaId);
+      getMediaUrl(initialMediaId);
+    } else {
+      // console.log('VideoPlayer: initialMediaId is null');
+      setMediaUrl('');
+    }
+  }, [initialMediaId]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (video && syncEngine) {
+      // console.log('VideoPlayer: Binding SyncEngine to video element');
       syncEngine.setVideoElement(video);
 
       syncEngine.onDriftChange = (newDrift, newStrategy) => {
@@ -85,33 +93,36 @@ export default function VideoPlayer({
     ));
   };
 
-  const getMediaUrl = async () => {
+  const getMediaUrl = async (id: string) => {
     try {
-      const response = await api.get(`/media/${mediaId}`);
-      setMediaUrl(response.data.url);
-      console.log(response.data.url);
+      // console.log('VideoPlayer: Fetching URL for mediaId:', id);
+      const response = await api.get(`/media/${id}`);
+      if (response.data && response.data.url) {
+        setMediaUrl(response.data.url);
+        // console.log('VideoPlayer: Successfully loaded media URL:', response.data.url);
+      } else {
+        console.warn('VideoPlayer: API returned empty URL for id:', id);
+        setMediaUrl('');
+      }
     } catch (error) {
-      console.error('Error fetching media URL:', error);
+      console.error('VideoPlayer: Error fetching media URL:', error);
     }
   };
 
   return (
     <div style={{ position: 'relative' }}>
       <video
+        key={mediaUrl || 'default'}
         ref={videoRef}
         controls
+        src={mediaUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"}
         style={{
           width: '100%',
           maxWidth: '800px',
           borderRadius: '8px',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
         }}
-      >
-        <source
-          src={mediaUrl ? mediaUrl : "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"}
-          type="video/mp4"
-        />
-      </video>
+      />
 
       {/* Buffer Health Bar */}
       <div
@@ -137,7 +148,7 @@ export default function VideoPlayer({
       </div>
 
       {/* Buffering Overlay */}
-      {buffering && (
+      {/* {buffering && (
         <div
           style={{
             position: 'absolute',
@@ -164,7 +175,7 @@ export default function VideoPlayer({
           />
           <span>Buffering for smooth playback...</span>
         </div>
-      )}
+      )} */}
 
       {savedPosition && savedPosition > 10 && (
         <div style={{
@@ -340,7 +351,7 @@ export default function VideoPlayer({
       )}
 
       {/* Debug Info */}
-      <div
+      {/* <div
         style={{
           marginTop: 16,
           padding: 16,
@@ -350,13 +361,13 @@ export default function VideoPlayer({
           fontSize: 12
         }}
       >
-        <div>Role: {isHost ? 'HOST' : 'VIEWER'}</div>
+        <div>Role: {isHost ? 'HOST' : 'Viewer'}</div>
         <div>Drift: {drift.toFixed(3)}s</div>
         <div>Strategy: {strategy}</div>
-        <div>Playback Rate: {videoRef.current?.playbackRate.toFixed(3) || '1.000'}</div>
-        <div>Buffer Health: {(bufferHealth * 100).toFixed(0)}%</div>
-        <div>Buffering: {buffering ? 'YES' : 'NO'}</div>
-      </div>
+        <div>playback rate: {videoRef.current?.playbackRate.toFixed(3) || '1.000'}</div>
+        <div>buffer health: {(bufferHealth * 100).toFixed(0)}%</div>
+        <div>buffering: {buffering ? 'Yes' : 'No'}</div>
+      </div> */}
 
       <style>{`
         @keyframes spin {

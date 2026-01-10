@@ -8,7 +8,7 @@ export class WebRTCManager {
   private connections: Map<string, RTCPeerConnection> = new Map();
   private dataChannels: Map<string, RTCDataChannel> = new Map();
   private ws: WebSocket;
-  
+
   // Callbacks
   onDataChannelMessage?: (fromPeerId: string, message: DataChannelMessage) => void;
   onConnectionStateChange?: (peerId: string, state: RTCPeerConnectionState) => void;
@@ -20,13 +20,13 @@ export class WebRTCManager {
 
   async createOffer(targetPeerId: string) {
     const pc = this.createPeerConnection(targetPeerId);
-    
+
     // Create data channel (caller creates it)
     const dc = pc.createDataChannel('sync', {
-      ordered: false,
-      maxRetransmits: 0
+      ordered: true,
+      maxRetransmits: 3
     });
-    
+
     this.setupDataChannel(targetPeerId, dc);
 
     const offer = await pc.createOffer();
@@ -99,7 +99,7 @@ export class WebRTCManager {
 
     // Handle connection state changes
     pc.onconnectionstatechange = () => {
-      console.log(`Connection to ${peerId}: ${pc.connectionState}`);
+      // console.log(`Connection to ${peerId}: ${pc.connectionState}`);
       this.onConnectionStateChange?.(peerId, pc.connectionState);
 
       if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
@@ -113,11 +113,11 @@ export class WebRTCManager {
 
   private setupDataChannel(peerId: string, channel: RTCDataChannel) {
     channel.onopen = () => {
-      console.log(`Data channel to ${peerId} opened`);
+      // console.log(`Data channel to ${peerId} opened`);
     };
 
     channel.onclose = () => {
-      console.log(`Data channel to ${peerId} closed`);
+      // console.log(`Data channel to ${peerId} closed`);
       this.dataChannels.delete(peerId);
     };
 
@@ -158,6 +158,12 @@ export class WebRTCManager {
       } catch (err) {
         console.error(`Error sending to ${peerId}:`, err);
       }
+    }
+  }
+
+  sendSignalingMessage(message: any) {
+    if (this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(message));
     }
   }
 

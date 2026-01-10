@@ -25,6 +25,7 @@ export class SyncEngine {
   private sessionId: string = '';
   private positionSaveInterval: number | null = null;
   private snapshotInterval: number | null = null;
+  private serverBackupInterval: number | null = null;
   private driftCheckInterval: number | null = null;
   private currentDrift: number = 0;
   private targetPlaybackRate: number = 1.0;
@@ -186,6 +187,18 @@ export class SyncEngine {
 
       this.webrtc.broadcast(snapshot);
     }, 500);
+
+    // Backup state to server every 5 seconds for persistence
+    this.serverBackupInterval = window.setInterval(() => {
+      if (!this.videoElement || !this.isHost) return;
+
+      this.webrtc.sendSignalingMessage({
+        type: 'sync-snapshot',
+        position: this.videoElement.currentTime,
+        playing: !this.videoElement.paused,
+        timestamp: Date.now()
+      });
+    }, 5000);
   }
 
   private stopBroadcastingSnapshots() {
@@ -406,9 +419,28 @@ export class SyncEngine {
 
     this.currentDrift = this.videoElement.currentTime - expectedPosition;
 
-    if (snapshot.version > this.version) {
-      this.version = snapshot.version;
+    // State convergence: if we are stalled (paused but host is playing) 
+    // and drift is growing, force a command update
+    if (snapshot.playing && this.videoElement.paused && Math.abs(this.currentDrift) > 1.0) {
+      console.log(`[Sync] State mismatch detected (Peer: Paused, Host: Playing). Forcing resync...`);
+      this.handleCommand({
+        playing: true,
+        position: snapshot.position,
+        timestamp: snapshot.timestamp
+      }, snapshot.version);
     }
+    // Conversly, if host is paused but we are playing
+    else if (!snapshot.playing && !this.videoElement.paused && Math.abs(this.currentDrift) > 1.0) {
+      console.log(`[Sync] State mismatch detected (Peer: Playing, Host: Paused). Forcing pause...`);
+      this.handleCommand({
+        playing: false,
+        position: snapshot.position,
+        timestamp: snapshot.timestamp
+      }, snapshot.version);
+    }
+
+    // Update last snapshot for drift calculations
+    this.lastSnapshot = snapshot;
   }
 
   handleCommand(state: SyncState, version: number) {
@@ -506,6 +538,10 @@ export class SyncEngine {
 
     if (this.positionSaveInterval) {
       clearInterval(this.positionSaveInterval);
+    }
+
+    if (this.serverBackupInterval) {
+      clearInterval(this.serverBackupInterval);
     }
 
     if (this.videoElement) {
