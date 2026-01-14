@@ -58,7 +58,8 @@
 .progress-bar-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--brand-primary), var(--brand-success));
-    transition: width 0.3s ease;
+    transition: width 0.5s ease-out;
+    will-change: width;
 }
 
 .upload-actions {

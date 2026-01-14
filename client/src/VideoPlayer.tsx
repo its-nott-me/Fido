@@ -117,22 +117,33 @@ export default function VideoPlayer({
 
   return (
     <div style={{ position: 'relative' }}>
-      <video
-        key={mediaUrl || 'default'}
-        ref={videoRef}
-        controls
-        muted={!mediaUrl}
-        src={mediaUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"}
+      <div
         style={{
-          // padding: '2rem',
+          position: 'relative',
           width: '100%',
-          // maxWidth: '800px',
-          borderRadius: '8px',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+          margin: '0 auto',
+          aspectRatio: '16 / 9',
+          backgroundColor: 'black',
+          borderRadius: 12,
+          overflow: 'hidden',
         }}
-        autoPlay={!mediaUrl}
-      />
-
+      >
+        <video
+          key={mediaUrl || 'default'}
+          ref={videoRef}
+          controls
+          muted={!mediaUrl}
+          src={mediaUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"}
+          style={{
+            height: '100%',
+            width: '100%',
+            objectFit: 'contain',
+            borderRadius: '8px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+          }}
+          autoPlay={!mediaUrl}
+        />
+      </div>
       {/* Buffer Health Bar */}
       <div
         style={{

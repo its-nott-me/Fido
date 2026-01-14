@@ -23,8 +23,6 @@ export async function getMediaUrl(key, userId) {
         ? env.r2WorkerUrl.slice(0, -1)
         : env.r2WorkerUrl;
         
-        
-    // return `${baseUrl}/${userId}/${key}`;
     return `${baseUrl}/${key}`;
 }
 

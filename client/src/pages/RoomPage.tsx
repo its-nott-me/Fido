@@ -245,7 +245,6 @@ export default function RoomPage() {
                         <button
                             onClick={() => {
                                 navigator.clipboard.writeText(window.location.href);
-                                alert('Link Encrypted and Copied.');
                             }}
                             className="nav-btn-primary action-btn"
                         >

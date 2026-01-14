@@ -17,6 +17,25 @@ interface GalleryProps {
     onSelect?: (media: Media) => void;
 }
 
+type ThumbnailProps = {
+    r2WorkerURL: string,
+    thumbnailKey: string,
+};
+
+const Thumbnail: React.FC<ThumbnailProps> = ({r2WorkerURL, thumbnailKey}) => {
+    const [thumbnailBroken, setThumbnailBroken] = useState(false);
+
+    if(thumbnailBroken) return <p>🎬</p>;
+
+    return (
+        <img 
+            src={`${r2WorkerURL}/${thumbnailKey}`} 
+            onError={() => setThumbnailBroken(true)}
+            alt='Media Thumbnail'
+        />
+    )
+}
+
 export default function Gallery({ refreshTrigger = 0, onSelect }: GalleryProps) {
     const [medias, setMedias] = useState<Media[]>([]);
     const [loading, setLoading] = useState(true);
@@ -73,8 +92,10 @@ export default function Gallery({ refreshTrigger = 0, onSelect }: GalleryProps) 
                     className="gallery-item glass-module"
                 >
                     <div className="media-thumbnail">
-                        <img src={`${r2WorkerURL}/${media.thumbnail_key}`}/>
-                        {/* 🎬 */}
+                        <Thumbnail 
+                            r2WorkerURL={r2WorkerURL} 
+                            thumbnailKey={media.thumbnail_key} 
+                        />
                     </div>
                     <div className="media-info">
                         <span className="media-name" title={media.filename}>

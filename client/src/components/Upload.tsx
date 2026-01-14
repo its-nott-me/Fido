@@ -7,6 +7,8 @@ export default function Upload({ onUploadSuccess }: { onUploadSuccess: () => voi
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
+    const targetProgress = useRef(0);
+    const rafRef = useRef<number | null>(null); // request animation frame --> raf
     const [error, setError] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { token } = useAuth();
@@ -18,38 +20,96 @@ export default function Upload({ onUploadSuccess }: { onUploadSuccess: () => voi
         }
     };
 
-    const handleUpload = async () => {
-        if (!file) return;
-
-        setUploading(true);
+    const resetInput = () => {
+        setFile(null);
         setProgress(0);
         setError('');
-
-        const formData = new FormData();
-        formData.append('media', file);
-
-        try {
-            await axios.post('/media/upload', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'Authorization': `Bearer ${token}`
-                },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round((progressEvent.loaded * 100) / (file.size || 100));
-                    setProgress(Math.min(percent, 95));
-                }
-            })
-            .then(() => setProgress(100));
-
-            setFile(null);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-            onUploadSuccess();
-        } catch (err: any) {
-            console.error('Upload error:', err);
-            setError(err.response?.data?.error || 'Upload failed. Please try again.');
-        } finally {
-            setUploading(false);
+        if(fileInputRef.current){
+            fileInputRef.current.value = '';
         }
+    };
+
+    const startProgressAnimation = () => {
+        if (rafRef.current) return;
+
+        const animate = () => {
+            setProgress(prev => {
+                const diff = targetProgress.current - prev;
+                if (Math.abs(diff) < 0.1) {
+                    return targetProgress.current;
+                }
+                return prev + diff * 0.15; // easing factor
+            });
+
+            rafRef.current = requestAnimationFrame(animate);
+        };
+
+        rafRef.current = requestAnimationFrame(animate);
+    };
+
+    const stopProgressAnimation = () => {
+        if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+        }
+    };
+
+    const handleUpload = async () => {
+    if (!file) return;
+
+    setUploading(true);
+    setProgress(0);
+    setError("");
+
+    try {
+        // 1️⃣ Get upload URL
+        const { data } = await axios.post(
+        "/media/presign",
+        {
+            filename: file.name,
+            contentType: file.type,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        // 2️⃣ Upload directly to R2
+        await axios.put(data.uploadUrl, file, {
+        headers: {
+            "Content-Type": file.type,
+        },
+        onUploadProgress: (e) => {
+            if (!e.total) return;
+            targetProgress.current = Math.min(
+                Math.round((e.loaded / e.total) * 100),
+                95
+            );
+            startProgressAnimation();
+        },
+        });
+
+        // 3️⃣ Notify backend
+        await axios.post(
+        "/media/complete",
+        {
+            key: data.key,
+            filename: file.name,
+            size: file.size,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        targetProgress.current = 100;
+        setProgress(100);
+        onUploadSuccess();
+        resetInput();
+
+    } catch (err: any) {
+        console.error(err);
+        setError("Upload failed");
+    } finally {
+        stopProgressAnimation();
+        setUploading(false);
+    }
     };
 
     return (
@@ -97,7 +157,7 @@ export default function Upload({ onUploadSuccess }: { onUploadSuccess: () => voi
                             <button onClick={handleUpload} className="nav-btn-primary btn-upload">
                                 Start Transmission
                             </button>
-                            <button onClick={() => setFile(null)} className="btn-cancel">
+                            <button onClick={resetInput} className="btn-cancel">
                                 Abort
                             </button>
                         </div>

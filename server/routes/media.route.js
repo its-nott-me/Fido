@@ -2,11 +2,14 @@ import { env } from '../loadEnv.js';
 import express from 'express';
 import multer from 'multer';
 import { query } from '../db.js';
-import { getMediaUrl, uploadToR2 } from '../r2/cloudflare.js';
+import { getMediaUrl, r2, uploadToR2 } from '../r2/cloudflare.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import { PassThrough } from "stream";
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { generateThumbnail } from '../middleware/generateThumbnail.js';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -66,32 +69,6 @@ router.get('/:mediaId', verifyToken, async (req, res) => {
 });
 
 // Upload media
-// router.post('/upload', verifyToken, upload.single('media'), async (req, res) => {
-//     if (!req.file) {
-//         return res.status(400).json({ error: 'No file uploaded' });
-//     }
-
-//     const filename = req.file.originalname;
-//     const key = `${req.user.id}_${Date.now()}-${filename}`;
-
-//     try {
-//         // 1. Upload to R2
-//         await uploadToR2(key, req.file.buffer, req.file.mimetype);
-
-//         // 2. Save metadata to DB
-//         const result = await query(
-//             'INSERT INTO medias (user_id, filename, r2_key) VALUES ($1, $2, $3) RETURNING *',
-//             [req.user.id, filename, key]
-//         );
-
-//         res.status(201).json(result.rows[0]);
-//     } catch (error) {
-//         console.error('Upload error:', error);
-//         res.status(500).json({ error: 'Failed to upload media' });
-//     }
-// });
-
-
 router.post("/upload", verifyToken, upload.single("media"), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
@@ -141,6 +118,48 @@ router.post("/upload", verifyToken, upload.single("media"), async (req, res) => 
     }
   }
 );
+
+router.post("/presign", verifyToken, async (req, res) => {
+  const { filename, contentType } = req.body;
+
+  if (!filename || !contentType) {
+    return res.status(400).json({ error: "Invalid request" });
+  }
+
+  const key = `${req.user.id}_${Date.now()}-${filename}`;
+
+  const command = new PutObjectCommand({
+    Bucket: env.r2BucketName,
+    Key: key,
+    ContentType: contentType,
+  });
+
+  // URL valid for 15 minutes
+  const uploadUrl = await getSignedUrl(r2, command, {
+    expiresIn: 900,
+  });
+
+  res.json({ key, uploadUrl });
+});
+
+router.post("/complete", verifyToken, async (req, res) => {
+  const { key, filename, size } = req.body;
+
+  const result = await query(
+    `
+    INSERT INTO medias (user_id, filename, r2_key)
+    VALUES ($1, $2, $3)
+    RETURNING *
+    `,
+    [req.user.id, filename, key]
+  );
+
+  // thumbnail gen (sync for now)
+  generateThumbnail(result.rows[0]).catch(console.error);
+
+  res.json(result.rows[0]);
+});
+
 
 
 export default router;
