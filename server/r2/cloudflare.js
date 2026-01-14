@@ -14,7 +14,7 @@ export const r2 = new S3Client({
 /**
  * Returns a CDN-backed URL for the given media key via the Cloudflare Worker proxy.
  */
-export async function getMediaUrl(key) {
+export async function getMediaUrl(key, userId) {
     if (!env.r2WorkerUrl) {
         throw new Error("R2_WORKER_URL is not defined in environment");
     }
@@ -22,7 +22,9 @@ export async function getMediaUrl(key) {
     const baseUrl = env.r2WorkerUrl.endsWith('/')
         ? env.r2WorkerUrl.slice(0, -1)
         : env.r2WorkerUrl;
-
+        
+        
+    // return `${baseUrl}/${userId}/${key}`;
     return `${baseUrl}/${key}`;
 }
 
@@ -31,7 +33,6 @@ export async function getMediaUrl(key) {
  */
 export async function uploadToR2(key, body, contentType) {
     try {
-        console.log('uploading')
         const command = new PutObjectCommand({
             Bucket: env.r2BucketName,
             Key: key,

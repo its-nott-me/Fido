@@ -1,0 +1,122 @@
+.hero-section {
+    min-height: 95vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    padding: 0 1rem;
+    overflow: hidden;
+}
+
+.hero-glow-core {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 300px;
+    background: var(--brand-primary);
+    filter: blur(150px);
+    opacity: 0.2;
+    z-index: 1;
+    border-radius: 50%;
+}
+
+.hero-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid var(--brand-primary-low);
+    border-radius: 50px;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--brand-primary);
+    margin-bottom: 2rem;
+    letter-spacing: 2px;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 10;
+    max-width: 900px;
+}
+
+.hero-title {
+    font-size: clamp(3.5rem, 10vw, 6.5rem);
+    font-weight: 800;
+    line-height: 0.95;
+    margin-bottom: 2rem;
+    letter-spacing: -4px;
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, var(--brand-primary), #c4b5fd);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+}
+
+.hero-subtitle {
+    font-size: 1.5rem;
+    color: var(--text-dim);
+    margin-bottom: 3rem;
+    line-height: 1.4;
+    max-width: 700px;
+    margin-inline: auto;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+}
+
+.hero-btn {
+    padding: 1.25rem 3rem !important;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.hero-btn-secondary {
+    padding: 1.25rem 3rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.hero-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+    filter: blur(60px);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.typing-badge {
+    font-family: monospace;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.cursor {
+    margin-left: 2px;
+    animation: blink 1s step-end infinite;
+    color: var(--brand-primary);
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0;
+    }
+}

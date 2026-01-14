@@ -5,6 +5,7 @@ import Gallery from '../components/Gallery';
 import { ClockSync } from '../ClockSync';
 import { SyncEngine } from '../SyncEngine';
 import { WebRTCManager } from '../WebRTCManager';
+import './RoomPage.css';
 
 function generatePeerId() {
     return `peer-${Math.random().toString(36).substr(2, 9)}`;
@@ -49,8 +50,6 @@ export default function RoomPage() {
         wsRef.current = ws;
 
         ws.onopen = () => {
-            // console.log('Connected to signaling server');
-
             webrtcRef.current = new WebRTCManager(peerId, ws);
             clockSyncRef.current = new ClockSync();
             syncEngineRef.current = new SyncEngine(webrtcRef.current, clockSyncRef.current);
@@ -225,221 +224,147 @@ export default function RoomPage() {
     };
 
     return (
-        <div style={{ padding: '2rem', minHeight: '100vh', backgroundColor: '#0f172a', color: 'white' }}>
-            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                    <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>
-                            FIDO <span style={{ color: '#64748b', fontWeight: 400 }}>/ ROOM</span>
-                        </h1>
-                        <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Session: {sessionId}</p>
+        <div className="room-page">
+            <header className="room-header glass-module">
+                <div className="room-info">
+                    <h1>ID: {sessionId} {" "}
+                        <svg xmlns="www.w3.org" cursor="pointer" width="16" height="16" fill="currentColor" className="bi bi-clipboard" viewBox="0 0 16 16">
+                            <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z" />
+                            <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z" />
+                        </svg>
+                    </h1>
+                    <span className="session-tag">FIDO <span className="dot">/</span> STREAMING</span>
+                </div>
+
+                <div className="status-bar">
+                    <div className={`status-indicator ${connected ? 'status-connected' : 'status-offline'}`}>
+                        {connected ? 'Sync Online' : 'Signal Lost'}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                        <div style={{
-                            padding: '8px 16px',
-                            backgroundColor: connected ? '#10b981' : '#ef4444',
-                            borderRadius: 8,
-                            fontSize: 12,
-                            fontWeight: 700
-                        }}>
-                            {connected ? 'CONNECTED' : 'OFFLINE'}
-                        </div>
-
-                        <div style={{
-                            padding: '8px 16px',
-                            backgroundColor: webrtcConnections.length > 0 ? '#3b82f6' : '#334155',
-                            borderRadius: 8,
-                            fontSize: 12,
-                            fontWeight: 700
-                        }}>
-                            {webrtcConnections.length} PEERS
-                        </div>
-
+                    <div className="room-actions">
                         <button
                             onClick={() => {
                                 navigator.clipboard.writeText(window.location.href);
-                                alert('Invite link copied!');
+                                alert('Link Encrypted and Copied.');
                             }}
-                            style={{
-                                padding: '8px 16px',
-                                backgroundColor: '#6366f1',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: 8,
-                                fontSize: 12,
-                                fontWeight: 700,
-                                cursor: 'pointer'
-                            }}
+                            className="nav-btn-primary action-btn"
                         >
-                            INVITE
+                            SHARE SIGNAL
                         </button>
 
                         {isHost && (
                             <button
                                 onClick={() => setShowGallery(!showGallery)}
-                                style={{
-                                    padding: '8px 16px',
-                                    backgroundColor: '#374151',
-                                    color: 'white',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    borderRadius: 8,
-                                    fontSize: 12,
-                                    fontWeight: 700,
-                                    cursor: 'pointer'
-                                }}
+                                className="nav-btn-primary action-btn"
                             >
-                                {showGallery ? 'CLOSE GALLERY' : 'CHANGE VIDEO'}
+                                {showGallery ? 'CLOSE ARCHIVE' : 'SELECT MEDIA'}
                             </button>
                         )}
                     </div>
                 </div>
+            </header>
 
-                {showGallery && isHost && (
-                    <div style={{
-                        marginBottom: '2rem',
-                        padding: '2rem',
-                        backgroundColor: 'rgba(30, 41, 59, 0.5)',
-                        borderRadius: '16px',
-                        border: '1px solid rgba(255, 255, 255, 0.1)'
-                    }}>
-                        <Gallery onSelect={(media) => handleMediaSelect(media.r2_key)} />
+            <main className="player-container glass-module">
+                <div className="mockup-header">
+                    <div className="mockup-controls">
+                        <span className="dot red"></span>
+                        <span className="dot yellow"></span>
+                        <span className="dot green"></span>
                     </div>
-                )}
-
-                {connected ? (
-                    <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', backgroundColor: 'black', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-                        <VideoPlayer
-                            syncEngine={syncEngineRef.current}
-                            isHost={isHost}
-                            mediaId={currentMediaId}
-                            syncEnabled={syncEnabled}
-                            onSyncToggle={handleSyncToggle}
-                            savedPosition={showResumeUI ? savedPosition : null}
-                            onResumePosition={handleResumePosition}
-                            onDismissResume={handleDismissResume}
-                        />
-
-                        {!hasInteracted && (
-                            <div style={{
-                                position: 'absolute',
-                                inset: 0,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                backdropFilter: 'blur(8px)',
-                                zIndex: 10
-                            }}>
-                                <button
-                                    onClick={handleJoinClick}
-                                    style={{
-                                        padding: '1.25rem 3rem',
-                                        fontSize: '1.25rem',
-                                        fontWeight: 700,
-                                        backgroundColor: '#3b82f6',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '16px',
-                                        cursor: 'pointer',
-                                        boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.5)'
-                                    }}
-                                >
-                                    Join Session
-                                </button>
-                            </div>
-                        )}
+                    <div className="mockup-title">FIDO // FEED_{sessionId?.toUpperCase()}</div>
+                    <div className="mockup-stats">
+                        <span className="pulse"></span> {webrtcConnections.length + 1} PEERS ACTIVE
                     </div>
-                ) : (
-                    <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
-                        Establishing connection...
+                </div>
+
+                <div className="mockup-content">
+                    <div className="scanline"></div>
+
+                    {connected ? (
+                        <div className="video-viewport">
+                            <VideoPlayer
+                                syncEngine={syncEngineRef.current}
+                                isHost={isHost}
+                                mediaId={currentMediaId}
+                                syncEnabled={syncEnabled}
+                                onSyncToggle={handleSyncToggle}
+                                savedPosition={showResumeUI ? savedPosition : null}
+                                onResumePosition={handleResumePosition}
+                                onDismissResume={handleDismissResume}
+                            />
+                        </div>
+                    ) : (
+                        <div className="interaction-overlay">
+                            <div className="status-indicator">Initializing Uplink...</div>
+                        </div>
+                    )}
+
+                    <div className="mockup-hud-elements">
+                        <div className="hud-line top-left"></div>
+                        <div className="hud-line top-right"></div>
+                        <div className="hud-line bottom-left"></div>
+                        <div className="hud-line bottom-right"></div>
+
+                        <div className="hud-data-box hud-box-move">
+                            <div className="data-row"><span>SYNC</span> [{syncEnabled ? 'ENABLED' : 'OFFLINE'}]</div>
+                            <div className="data-row"><span>PEER</span> [{peerId.split('-')[1].toUpperCase()}]</div>
+                            <div className="data-row"><span>HOST</span> [{isHost ? 'SELF' : 'REMOTE'}]</div>
+                        </div>
                     </div>
-                )}
 
-                {passwordRequired && (
-                    <div style={{
-                        position: 'fixed',
-                        inset: 0,
-                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                        backdropFilter: 'blur(12px)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 100
-                    }}>
-                        <form
-                            onSubmit={handlePasswordSubmit}
-                            style={{
-                                width: '100%',
-                                maxWidth: '400px',
-                                padding: '2.5rem',
-                                backgroundColor: '#1e293b',
-                                borderRadius: '24px',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-                                textAlign: 'center'
-                            }}
-                        >
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem' }}>Protected Room</h2>
-                            <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '2rem' }}>Please enter the room password to join.</p>
+                    {!hasInteracted && connected && (
+                        <div className="interaction-overlay">
+                            <button
+                                onClick={handleJoinClick}
+                                className="nav-btn-primary btn-join-session"
+                            >
+                                JOIN PERSPECTIVE
+                            </button>
+                        </div>
+                    )}
 
+                    {showGallery && isHost && (
+                        <div className="gallery-overlay glass-module">
+                            <Gallery onSelect={(media) => handleMediaSelect(media.r2_key)} />
+                        </div>
+                    )}
+                </div>
+            </main>
+
+            {passwordRequired && (
+                <div className="password-overlay">
+                    <div className="password-card glass-module">
+                        <h2>Encrypted Session</h2>
+                        <p>Credentials required to access this signal</p>
+
+                        <form onSubmit={handlePasswordSubmit}>
                             <input
                                 type="password"
-                                placeholder="Room Password"
+                                placeholder="ACCESS KEY"
                                 autoFocus
                                 value={passwordInput}
                                 onChange={(e) => setPasswordInput(e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    padding: '1rem',
-                                    backgroundColor: 'rgba(15, 23, 42, 0.5)',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    borderRadius: '12px',
-                                    color: 'white',
-                                    marginBottom: '1.5rem',
-                                    outline: 'none',
-                                    fontSize: '1rem'
-                                }}
+                                className="auth-input"
                             />
 
                             <button
                                 type="submit"
-                                style={{
-                                    width: '100%',
-                                    padding: '1rem',
-                                    backgroundColor: '#3b82f6',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '12px',
-                                    fontWeight: 700,
-                                    fontSize: '1rem',
-                                    cursor: 'pointer',
-                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                                }}
+                                className="nav-btn-primary btn-password-submit action-btn"
                             >
-                                Enter Room
+                                VERIFY & ENTER
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => navigate('/')}
-                                style={{
-                                    marginTop: '1.5rem',
-                                    backgroundColor: 'transparent',
-                                    color: '#64748b',
-                                    border: 'none',
-                                    fontSize: '0.875rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer'
-                                }}
+                                className="btn-cancel-room"
                             >
-                                Cancel and Go Back
+                                ABORT MISSION
                             </button>
                         </form>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }

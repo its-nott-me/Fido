@@ -1,0 +1,75 @@
+.dashboard-page {
+    padding: 100px 2rem 4rem;
+    max-width: var(--container-max);
+    margin: 0 auto;
+    min-height: 100vh;
+}
+
+.dashboard-header-section {
+    margin-bottom: 3rem;
+}
+
+.header-info h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0;
+    background: linear-gradient(135deg, var(--text-main), var(--text-dim));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.header-info p {
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 3rem;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.collection-card {
+    padding: 2.5rem;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.gallery-container {
+    min-height: 400px;
+}
+
+.dashboard-auth-notice {
+    height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.notice-card {
+    padding: 4rem;
+    text-align: center;
+    max-width: 500px;
+}
+
+.notice-card h2 {
+    color: var(--brand-error);
+    margin-bottom: 1rem;
+}

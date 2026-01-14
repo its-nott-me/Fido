@@ -1,0 +1,66 @@
+.navbar {
+    position: fixed;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 95%;
+    max-width: var(--container-max);
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    z-index: 1000;
+    border-radius: 20px;
+    /* Overriding base glass-module radius for the pill look */
+}
+
+.nav-container {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-logo {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--text-main);
+    text-decoration: none;
+    letter-spacing: -1px;
+}
+
+.nav-logo .dot {
+    color: var(--brand-primary);
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.nav-link {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.nav-link:hover {
+    color: var(--brand-primary);
+}
+
+.nav-btn-primary {
+    background: var(--brand-primary);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    box-shadow: var(--shadow-purple);
+    transition: transform 0.2s;
+}
+
+.nav-btn-primary:hover {
+    transform: translateY(-2px);
+}

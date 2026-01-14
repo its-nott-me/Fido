@@ -1,0 +1,87 @@
+.upload-container {
+    padding: 0.75rem;
+    background: rgba(139, 92, 246, 0.05);
+    border: 1px dashed var(--glass-border);
+    border-radius: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.upload-container:hover {
+    border-color: var(--brand-primary);
+    background: rgba(139, 92, 246, 0.08);
+}
+
+.upload-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-icon {
+    font-size: 2.5rem;
+    color: var(--brand-primary);
+}
+
+.upload-header p {
+    align-items: center;
+    display: inline-flex;
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.file-info {
+    margin-bottom: 1.5rem;
+}
+
+.file-name {
+    font-weight: 600;
+    color: var(--text-main);
+    word-break: break-all;
+}
+
+.file-size {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--brand-primary), var(--brand-success));
+    transition: width 0.3s ease;
+}
+
+.upload-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.btn-upload {
+    padding: 0.75rem 2rem !important;
+}
+
+.btn-cancel {
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    color: var(--brand-error);
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.upload-error {
+    margin-top: 1rem;
+    color: var(--brand-error);
+    font-size: 0.85rem;
+}

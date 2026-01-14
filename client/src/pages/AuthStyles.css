@@ -1,0 +1,130 @@
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-card {
+    max-width: 440px;
+    width: 100%;
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    position: relative;
+    z-index: 10;
+}
+
+.auth-header {
+    text-align: center;
+}
+
+.auth-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    letter-spacing: -1px;
+}
+
+.auth-header p {
+    color: var(--text-dim);
+    font-size: 1rem;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.input-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-left: 0.5rem;
+}
+
+.auth-input {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    color: white;
+    outline: none;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.auth-input:focus {
+    border-color: var(--brand-primary);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.1);
+}
+
+.auth-button {
+    margin-top: 1rem;
+    padding: 1.1rem !important;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+}
+
+.auth-footer {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.95rem;
+}
+
+.auth-footer a {
+    color: var(--brand-primary);
+    text-decoration: none;
+    font-weight: 700;
+    margin-left: 0.5rem;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+.auth-error {
+    padding: 1rem;
+    background: var(--brand-error-low);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    color: var(--brand-error);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.auth-glow {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.glow-1 {
+    top: -10%;
+    right: -10%;
+}
+
+.glow-2 {
+    bottom: -10%;
+    left: -10%;
+}

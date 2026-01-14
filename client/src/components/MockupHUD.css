@@ -1,0 +1,185 @@
+.mockup-container {
+    max-width: 900px;
+    width: 100%;
+    margin: 4rem auto;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
+}
+
+.mockup-header {
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.mockup-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.red {
+    background: #ff5f56;
+}
+
+.yellow {
+    background: #ffbd2e;
+}
+
+.green {
+    background: #27c93f;
+}
+
+.mockup-title {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+}
+
+.mockup-stats {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--brand-success);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pulse {
+    width: 6px;
+    height: 6px;
+    background: var(--brand-success);
+    border-radius: 50%;
+    animation: pulse-glow 2s infinite;
+}
+
+.mockup-content {
+    padding: 2rem;
+    position: relative;
+    background: black;
+}
+
+.mockup-video-placeholder {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: linear-gradient(45deg, #05050a 0%, #12101c 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.scanline {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 50%, rgba(139, 92, 246, 0.05) 50%);
+    background-size: 100% 4px;
+    pointer-events: none;
+}
+
+.play-icon {
+    position: absolute;
+    font-size: 4rem;
+    color: var(--brand-primary);
+    opacity: 0.5;
+    filter: drop-shadow(0 0 20px var(--brand-glow));
+}
+
+.mockup-hud-elements {
+    position: absolute;
+    inset: 3rem;
+    pointer-events: none;
+}
+
+.hud-line {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--brand-primary);
+    opacity: 0.3;
+}
+
+.top-left {
+    top: 0;
+    left: 0;
+    border-right: none;
+    border-bottom: none;
+}
+
+.top-right {
+    top: 0;
+    right: 0;
+    border-left: none;
+    border-bottom: none;
+}
+
+.bottom-left {
+    bottom: 0;
+    left: 0;
+    border-right: none;
+    border-top: none;
+}
+
+.bottom-right {
+    bottom: 0;
+    right: 0;
+    border-left: none;
+    border-top: none;
+}
+
+.hud-data-box {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.65rem;
+}
+
+.hud-box-move {
+    margin-bottom: 1.5rem;
+}
+
+.data-row {
+    margin-bottom: 0.25rem;
+}
+
+.data-row span {
+    color: var(--brand-primary);
+}
+
+.mockup-footer {
+    padding: 1rem 2.5rem;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.timeline-mock {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.progress-mock {
+    width: 65%;
+    height: 100%;
+    background: var(--brand-primary);
+    box-shadow: 0 0 10px var(--brand-glow);
+}

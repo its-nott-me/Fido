@@ -1,0 +1,359 @@
+.room-page {
+    padding: 2rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    position: relative;
+    max-width: 1400px;
+    margin: 4rem auto 0 auto;
+}
+
+.room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+}
+
+.room-info h1 {
+    font-size: 1.25rem;
+    font-weight: 900;
+    margin: 0;
+}
+
+.session-tag {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-family: monospace;
+    letter-spacing: 1px;
+}
+
+.status-bar {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.status-indicator {
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.status-connected {
+    background: var(--brand-success-low);
+    color: var(--brand-success);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-offline {
+    background: var(--brand-error-low);
+    color: var(--brand-error);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.room-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.action-btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.player-container {
+    position: relative;
+    width: 100%;
+    background: black;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+}
+
+.mockup-header {
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.mockup-controls {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.red {
+    background: #ff5f56;
+}
+
+.yellow {
+    background: #ffbd2e;
+}
+
+.green {
+    background: #27c93f;
+}
+
+.mockup-title {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+}
+
+.mockup-stats {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--brand-success);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.pulse {
+    width: 6px;
+    height: 6px;
+    background: var(--brand-success);
+    border-radius: 50%;
+    animation: pulse-glow 2s infinite;
+}
+
+.mockup-content {
+    position: relative;
+    flex: 1;
+    background: black;
+    min-height: 400px;
+    /* Base height for small screens */
+    aspect-ratio: 16/9;
+    display: flex;
+    flex-direction: column;
+}
+
+.video-viewport {
+    width: 100%;
+    height: 100%;
+}
+
+.scanline {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 50%, rgba(139, 92, 246, 0.03) 50%);
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.mockup-hud-elements {
+    position: absolute;
+    inset: 2rem;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.hud-line {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border: 1.5px solid var(--brand-primary);
+    opacity: 0.4;
+}
+
+.top-left {
+    top: 0;
+    left: 0;
+    border-right: none;
+    border-bottom: none;
+}
+
+.top-right {
+    top: 0;
+    right: 0;
+    border-left: none;
+    border-bottom: none;
+}
+
+.bottom-left {
+    bottom: 0;
+    left: 0;
+    border-right: none;
+    border-top: none;
+}
+
+.bottom-right {
+    bottom: 0;
+    right: 0;
+    border-left: none;
+    border-top: none;
+}
+
+.hud-data-box {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.6rem;
+}
+
+.data-row {
+    margin-bottom: 0.2rem;
+}
+
+.data-row span {
+    color: var(--brand-primary);
+}
+
+.mockup-footer {
+    padding: 0.5rem 2rem;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.timeline-mock {
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.progress-mock {
+    width: 45%;
+    height: 100%;
+    background: var(--brand-primary);
+    box-shadow: 0 0 10px var(--brand-glow);
+}
+
+.interaction-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+}
+
+.btn-join-session {
+    padding: 1rem 3rem !important;
+    font-size: 1.1rem !important;
+}
+
+.gallery-overlay {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 350px;
+    height: calc(100% - 2rem);
+    z-index: 150;
+    padding: 1.5rem;
+}
+
+/* Responsiveness */
+@media (max-width: 1024px) {
+    .room-header {
+        flex-direction: column;
+        gap: 1.5rem;
+        text-align: center;
+    }
+
+    .room-info h1 {
+        font-size: 1.5rem;
+    }
+
+    .status-bar {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .room-page {
+        padding: 1rem;
+    }
+
+    .mockup-hud-elements {
+        inset: 1rem;
+    }
+
+    .hud-data-box {
+        display: none;
+        /* Hide data box on mobile for space */
+    }
+
+    .gallery-overlay {
+        width: calc(100% - 2rem);
+    }
+
+    .room-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .action-btn {
+        width: 100%;
+    }
+}
+
+.password-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 5, 10, 0.95);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.password-card {
+    max-width: 400px;
+    width: 100%;
+    padding: 2.5rem;
+    text-align: center;
+}
+
+.password-card h2 {
+    margin-bottom: 0.5rem;
+}
+
+.password-card p {
+    color: var(--text-dim);
+    margin-bottom: 2rem;
+}
+
+.btn-password-submit {
+    width: 100%;
+    margin-top: 1.5rem;
+}
+
+.btn-cancel-room {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    margin-top: 1.5rem;
+    cursor: pointer;
+}

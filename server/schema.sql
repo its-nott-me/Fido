@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS medias (
   user_id INTEGER REFERENCES users(id),
   filename TEXT NOT NULL,
   r2_key TEXT NOT NULL,
+  thumbnail_key TEXT,             -- R2 key for the thumbnail image (e.g., "thumbnails/user123/vid123_thumbnail.jpg")
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

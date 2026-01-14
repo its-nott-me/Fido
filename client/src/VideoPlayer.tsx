@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { SyncEngine } from './SyncEngine';
 import api from './axios/axios';
+import { useAuth } from './context/AuthContext';
 
 interface VideoPlayerProps {
   syncEngine: SyncEngine | null;
@@ -32,6 +33,7 @@ export default function VideoPlayer({
   const [buffering, setBuffering] = useState(false);
   const [bufferHealth, setBufferHealth] = useState(1);
   const [mediaUrl, setMediaUrl] = useState('');
+  const { token } = useAuth();
 
   useEffect(() => {
     if (initialMediaId) {
@@ -96,10 +98,14 @@ export default function VideoPlayer({
   const getMediaUrl = async (id: string) => {
     try {
       // console.log('VideoPlayer: Fetching URL for mediaId:', id);
-      const response = await api.get(`/media/${id}`);
+      const response = await api.get(`/media/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       if (response.data && response.data.url) {
         setMediaUrl(response.data.url);
-        // console.log('VideoPlayer: Successfully loaded media URL:', response.data.url);
+        console.log('VideoPlayer: Successfully loaded media URL:', response.data.url);
       } else {
         console.warn('VideoPlayer: API returned empty URL for id:', id);
         setMediaUrl('');
@@ -115,13 +121,16 @@ export default function VideoPlayer({
         key={mediaUrl || 'default'}
         ref={videoRef}
         controls
+        muted={!mediaUrl}
         src={mediaUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"}
         style={{
+          // padding: '2rem',
           width: '100%',
-          maxWidth: '800px',
+          // maxWidth: '800px',
           borderRadius: '8px',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
         }}
+        autoPlay={!mediaUrl}
       />
 
       {/* Buffer Health Bar */}
@@ -267,7 +276,7 @@ export default function VideoPlayer({
       )}
 
 
-      {!isHost && (
+      {(!isHost && mediaUrl) && (
         <div
           style={{
             position: 'absolute',
@@ -304,7 +313,7 @@ export default function VideoPlayer({
             }} />
           </div>
           <span style={{ fontWeight: 600 }}>
-            {syncEnabled ? 'Synced' : 'Independent'}
+            {syncEnabled ? 'Sync' : 'Independent'}
           </span>
         </div>
       )}

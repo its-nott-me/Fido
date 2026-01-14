@@ -7,7 +7,7 @@ import authRouter from './routes/auth.route.js';
 import { query } from './db.js';
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: 'http://localhost:3000' }));
 app.use(express.json());
 
 const PORT = 3001;

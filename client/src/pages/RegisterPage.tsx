@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from '../axios/axios';
+import './AuthStyles.css';
 
 export default function RegisterPage() {
     const [username, setUsername] = useState('');
@@ -32,127 +33,67 @@ export default function RegisterPage() {
     };
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '2rem',
-            background: 'radial-gradient(circle at top right, #1e1b4b, #0f172a)',
-            color: 'white'
-        }}>
-            <div style={{
-                maxWidth: '400px',
-                width: '100%',
-                padding: '2.5rem',
-                backgroundColor: 'rgba(30, 41, 59, 0.4)',
-                backdropFilter: 'blur(16px)',
-                borderRadius: '24px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-            }}>
-                <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-                    <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Create Account</h1>
-                    <p style={{ color: '#94a3b8' }}>Join FIDO for personal galleries</p>
+        <div className="auth-page">
+            <div className="auth-glow glow-1"></div>
+            <div className="auth-glow glow-2"></div>
+
+            <div className="auth-card glass-module">
+                <div className="auth-header">
+                    <h1>Create Identity</h1>
+                    <p>Join the Fido network</p>
                 </div>
 
-                {error && (
-                    <div style={{
-                        padding: '1rem',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.2)',
-                        borderRadius: '12px',
-                        color: '#f87171',
-                        fontSize: '0.875rem',
-                        marginBottom: '1.5rem',
-                        textAlign: 'center'
-                    }}>
-                        {error}
-                    </div>
-                )}
+                {error && <div className="auth-error">{error}</div>}
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <label style={{ fontSize: '0.875rem', fontWeight: 500, color: '#94a3b8' }}>Username</label>
+                <form onSubmit={handleSubmit} className="auth-form">
+                    <div className="input-group">
+                        <label>Username</label>
                         <input
                             type="text"
                             required
+                            placeholder="choose_a_name"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            style={{
-                                padding: '0.875rem 1rem',
-                                backgroundColor: 'rgba(15, 23, 42, 0.5)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '12px',
-                                color: 'white',
-                                outline: 'none',
-                                fontSize: '1rem'
-                            }}
+                            className="auth-input"
                         />
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <label style={{ fontSize: '0.875rem', fontWeight: 500, color: '#94a3b8' }}>Password</label>
+                    <div className="input-group">
+                        <label>Password</label>
                         <input
                             type="password"
                             required
+                            placeholder="••••••••"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            style={{
-                                padding: '0.875rem 1rem',
-                                backgroundColor: 'rgba(15, 23, 42, 0.5)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '12px',
-                                color: 'white',
-                                outline: 'none',
-                                fontSize: '1rem'
-                            }}
+                            className="auth-input"
                         />
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <label style={{ fontSize: '0.875rem', fontWeight: 500, color: '#94a3b8' }}>Confirm Password</label>
+                    <div className="input-group">
+                        <label>Confirm Password</label>
                         <input
                             type="password"
                             required
+                            placeholder="••••••••"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            style={{
-                                padding: '0.875rem 1rem',
-                                backgroundColor: 'rgba(15, 23, 42, 0.5)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '12px',
-                                color: 'white',
-                                outline: 'none',
-                                fontSize: '1rem'
-                            }}
+                            className="auth-input"
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        style={{
-                            marginTop: '1rem',
-                            padding: '1rem',
-                            backgroundColor: '#3b82f6',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '12px',
-                            fontWeight: 600,
-                            fontSize: '1rem',
-                            cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.2s',
-                            opacity: isSubmitting ? 0.7 : 1
-                        }}
+                        className="nav-btn-primary auth-button"
                     >
-                        {isSubmitting ? 'Creating account...' : 'Sign Up'}
+                        {isSubmitting ? 'Processing...' : 'Initialize Identity'}
                     </button>
                 </form>
 
-                <p style={{ marginTop: '2rem', textAlign: 'center', color: '#64748b', fontSize: '0.875rem' }}>
-                    Already have an account? <Link to="/login" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 600 }}>Login</Link>
-                </p>
+                <div className="auth-footer">
+                    Already registered? <Link to="/login">Signal In</Link>
+                </div>
             </div>
         </div>
     );
