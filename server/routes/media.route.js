@@ -1,18 +1,15 @@
 import { env } from '../loadEnv.js';
 import express from 'express';
-import multer from 'multer';
 import { query } from '../db.js';
-import { getMediaUrl, r2, uploadToR2 } from '../r2/cloudflare.js';
+import { getMediaUrl, uploadToR2 } from '../r2/cloudflare.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import { PassThrough } from "stream";
-import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { generateThumbnail } from '../middleware/generateThumbnail.js';
+import fs from 'fs';
+import path from 'path';
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -69,97 +66,105 @@ router.get('/:mediaId', verifyToken, async (req, res) => {
 });
 
 // Upload media
-router.post("/upload", verifyToken, upload.single("media"), async (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+async function convertStreamToHls(inputStream, filename) {
+  const hlsDir = path.join("/tmp", filename);
+  fs.mkdirSync(hlsDir, { recursive: true });
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputStream)
+      .videoCodec("libx264")
+      .audioCodec("aac")
 
-    const filename = req.file.originalname;
-    const timestamp = Date.now();
-    const mediaKey = `${req.user.id}_${timestamp}-${filename}`;
-    const thumbKey = `${req.user.id}_${timestamp}-thumb.jpg`;
+      // ===== HLS output =====
+      .output(path.join(hlsDir, `${filename}_index.m3u8`))
+      .outputOptions([
+        "-preset veryfast",
+        "-hls_time 6",
+        "-hls_playlist_type vod",
+        "-hls_flags independent_segments",
+        "-hls_segment_filename " +
+          path.join(hlsDir, `${filename}_seg_%03d.ts`),
+      ])
 
-    try {
-      let thumbnailKey = null;
+      // ===== thumbnail ouput =====
+      .output(path.join(hlsDir, `${filename}_thumb.jpg`))
+      .outputOptions([
+        "-frames:v 1",
+        "-vf scale=640:-1",
+        "-q:v 2",
+      ])
 
-      if (req.file.mimetype === "video/mp4") {
-        const thumbnailBuffer = await extractThumbnailFromBuffer(
-          req.file.buffer
-        );
-
-        await uploadToR2(
-          thumbKey,
-          thumbnailBuffer,
-          "image/jpeg"
-        );
-
-        thumbnailKey = thumbKey;
-      }
-
-      await uploadToR2(
-        mediaKey,
-        req.file.buffer,
-        req.file.mimetype
-      );
-
-      const result = await query(
-        `
-        INSERT INTO medias (user_id, filename, r2_key, thumbnail_key)
-        VALUES ($1, $2, $3, $4)
-        RETURNING *
-        `,
-        [req.user.id, filename, mediaKey, thumbnailKey]
-      );
-
-      res.status(201).json(result.rows[0]);
-    } catch (error) {
-      console.error("Upload error:", error);
-      res.status(500).json({ error: "Failed to upload media" });
-    }
-  }
-);
-
-router.post("/presign", verifyToken, async (req, res) => {
-  const { filename, contentType } = req.body;
-
-  if (!filename || !contentType) {
-    return res.status(400).json({ error: "Invalid request" });
-  }
-
-  const key = `${req.user.id}_${Date.now()}-${filename}`;
-
-  const command = new PutObjectCommand({
-    Bucket: env.r2BucketName,
-    Key: key,
-    ContentType: contentType,
+      .on("start", cmd => console.log("FFmpeg:", cmd))
+      .on("error", reject)
+      .on("end", () => resolve({ hlsDir }))
+      .run();
   });
 
-  // URL valid for 15 minutes
-  const uploadUrl = await getSignedUrl(r2, command, {
-    expiresIn: 900,
-  });
+}
 
-  res.json({ key, uploadUrl });
-});
+async function uploadHlsDirectory(hlsDir, filename) {
+  const files = fs.readdirSync(hlsDir);
 
-router.post("/complete", verifyToken, async (req, res) => {
-  const { key, filename, size } = req.body;
+  for (const file of files) {
+    const filePath = path.join(hlsDir, file);
+    const contentType = file.endsWith(".m3u8")
+      ? "application/vnd.apple.mpegurl"
+      : "video/mp2t";
 
-  const result = await query(
-    `
-    INSERT INTO medias (user_id, filename, r2_key)
-    VALUES ($1, $2, $3)
-    RETURNING *
-    `,
-    [req.user.id, filename, key]
+    await uploadToR2(
+      `${file}`,
+      fs.createReadStream(filePath),
+      contentType
+    );
+  }
+
+  await uploadToR2(
+    `${filename}_thumb.jpg`,
+    fs.createReadStream(path.join(hlsDir, `${filename}_thumb.jpg`)),
+    "image/jpeg"
   );
+}
 
-  // thumbnail gen (sync for now)
-  generateThumbnail(result.rows[0]).catch(console.error);
+router.post("/upload", verifyToken, async (req, res) => {
+  try {
+    const contentType = req.headers["content-type"];
+    const contentLength = req.headers['content-length'];
 
-  res.json(result.rows[0]);
+    if (!contentType || !contentType.startsWith("video/")) {
+      return res.status(400).json({ error: "Only video uploads allowed" });
+    }
+    if(contentLength > 1_61_06_12_736){ // >1.5gb
+      return res.status(400).json({ error: "Upload size should be less than 1.5GB"});
+    }
+    
+    const rawFilename =
+      req.headers["x-filename"] || `video_${Date.now()}`;
+
+    const filename = rawFilename
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-zA-Z0-9_-]/g, "");
+
+    const { hlsDir } = await convertStreamToHls(req, filename);
+    await uploadHlsDirectory(hlsDir, filename);
+
+    const result = await query(
+      `
+      INSERT INTO medias (user_id, filename, r2_key, thumbnail_key)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+      `,
+      [
+        req.user.id,
+        filename,
+        `${filename}_index.m3u8`,
+        `${filename}_thumb.jpg`
+      ]
+    );
+    console.log("uploaded vid:", filename);
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error("Upload error:", err);
+    res.status(500).json({ error: "HLS processing failed" });
+  }
 });
-
-
 
 export default router;

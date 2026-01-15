@@ -62,20 +62,21 @@ export default function Upload({ onUploadSuccess }: { onUploadSuccess: () => voi
     setError("");
 
     try {
-        // 1️⃣ Get upload URL
-        const { data } = await axios.post(
-        "/media/presign",
-        {
-            filename: file.name,
-            contentType: file.type,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-        );
+        // const { data } = await axios.post(
+        // "/media/presign",
+        // {
+        //     filename: file.name,
+        //     contentType: file.type,
+        // },
+        // { headers: { Authorization: `Bearer ${token}` } }
+        // );
 
-        // 2️⃣ Upload directly to R2
-        await axios.put(data.uploadUrl, file, {
+        await axios.post("/media/upload", file, {
         headers: {
             "Content-Type": file.type,
+            "Content-Length": file.size,
+            Authorization: `Bearer ${token}`,
+            "X-Filename": file.name,
         },
         onUploadProgress: (e) => {
             if (!e.total) return;
@@ -87,16 +88,15 @@ export default function Upload({ onUploadSuccess }: { onUploadSuccess: () => voi
         },
         });
 
-        // 3️⃣ Notify backend
-        await axios.post(
-        "/media/complete",
-        {
-            key: data.key,
-            filename: file.name,
-            size: file.size,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-        );
+        // await axios.post(
+        // "/media/complete",
+        // {
+        //     key: data.key,
+        //     filename: file.name,
+        //     size: file.size,
+        // },
+        // { headers: { Authorization: `Bearer ${token}` } }
+        // );
 
         targetProgress.current = 100;
         setProgress(100);
@@ -105,7 +105,7 @@ export default function Upload({ onUploadSuccess }: { onUploadSuccess: () => voi
 
     } catch (err: any) {
         console.error(err);
-        setError("Upload failed");
+        setError(err.response?.data?.error || "Upload failed");
     } finally {
         stopProgressAnimation();
         setUploading(false);
