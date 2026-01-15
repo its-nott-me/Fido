@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { SyncEngine } from './SyncEngine';
 import api from './axios/axios';
 import { useAuth } from './context/AuthContext';
+import Hls from 'hls.js';
 
 interface VideoPlayerProps {
   syncEngine: SyncEngine | null;
@@ -67,6 +68,55 @@ export default function VideoPlayer({
       };
     }
   }, [syncEngine, mediaUrl]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    let hls: Hls | null = null;
+    
+    if(!mediaUrl || !video) return;
+    
+    (async () => {
+      const type = await detectStreamType(mediaUrl);
+
+      if(type == 'hls' && Hls.isSupported()){
+        hls = new Hls({ lowLatencyMode: false });
+        
+        hls.loadSource(mediaUrl);
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if(data.fatal){
+            console.error("HLS fatal error:", data);
+            hls?.destroy();
+          }
+        });
+      } else if(video.canPlayType("application/vnd.apple.mpegurl")){
+        video.src = mediaUrl;
+      }
+    })();
+    }, [mediaUrl]);
+
+  async function detectStreamType (mediaUrl: string): Promise<"hls" | "mp4" | "unknown">{
+    if(mediaUrl.includes('.m3u8')) return "hls";
+
+    try{
+      const head = await fetch(mediaUrl, { method: "HEAD"});
+      const type = head.headers.get("content-type") || "";
+      if(type.includes("mpegurl")) return "hls";
+    } catch {}
+
+    try{
+      const res = await fetch(mediaUrl, {
+        headers: {Range: "bytes=0-200"},
+      });
+      const text = await res.text();
+      if(text.startsWith("EXTM3U")) return "hls";
+    } catch {}
+
+    if(mediaUrl.includes(".mp4")) return "mp4";
+
+    return "unknown";
+  }
 
   const handleResync = () => {
     syncEngine?.forceResync();
