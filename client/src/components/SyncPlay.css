@@ -118,6 +118,7 @@
 }
 
 .btn-create {
+    width: 100%;
     padding: 0.8rem !important;
     font-size: 0.95rem;
     text-align: center;
