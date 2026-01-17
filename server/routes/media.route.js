@@ -1,6 +1,6 @@
 import express from 'express';
 import { query } from '../db.js';
-import { getMediaUrl, uploadToR2, deleteObjectsByPrefix } from '../r2/cloudflare.js';
+import { getMediaUrl, uploadToR2, deleteObjectsByPrefix, getTotalBucketSize } from '../r2/cloudflare.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
@@ -159,10 +159,17 @@ router.post("/upload", verifyToken, async (req, res) => {
     const contentType = req.headers["content-type"];
     const contentLength = req.headers['content-length'];
 
+    // PRE-CHECK Storage Limit
+    const currentSize = await getTotalBucketSize();
+    const limit = 9 * 1024 * 1024 * 1024;
+    if (currentSize >= limit) {
+      return res.status(400).json({ error: "Storage limit reached. Cannot upload more files." });
+    }
+
     if (!contentType || !contentType.startsWith("video/")) {
       return res.status(400).json({ error: "Only video uploads allowed" });
     }
-    if (contentLength > 1_61_06_12_736) { // >1.5gb
+    if (contentLength > 1_61_06_12_736) { // >1.5GB
       return res.status(400).json({ error: "Upload size should be less than 1.5GB" });
     }
 
@@ -193,7 +200,10 @@ router.post("/upload", verifyToken, async (req, res) => {
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error("Upload error:", err);
-    res.status(500).json({ error: "HLS processing failed" });
+    const errorMessage = err.message.includes("Storage limit reached")
+      ? err.message
+      : "HLS processing failed";
+    res.status(err.message.includes("Storage limit reached") ? 400 : 500).json({ error: errorMessage });
   }
 });
 

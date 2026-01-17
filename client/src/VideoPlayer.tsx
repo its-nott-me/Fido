@@ -10,9 +10,9 @@ interface VideoPlayerProps {
   mediaId: string | null;
   syncEnabled: boolean;
   onSyncToggle: (enabled: boolean) => void;
-  savedPosition: number | null;
-  onResumePosition: () => void;
-  onDismissResume: () => void;
+  // savedPosition: number | null;
+  // onResumePosition: () => void;
+  // onDismissResume: () => void;
 }
 
 type DriftStrategy = 'locked' | 'soft-convergence' | 'show-ui' | 'force-resync';
@@ -23,9 +23,9 @@ export default function VideoPlayer({
   mediaId: initialMediaId,
   syncEnabled,
   onSyncToggle,
-  savedPosition,
-  onResumePosition,
-  onDismissResume
+  // savedPosition,
+  // onResumePosition,
+  // onDismissResume
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [drift, setDrift] = useState(0);
@@ -250,7 +250,7 @@ export default function VideoPlayer({
         </div>
       )} */}
 
-      {isHost && savedPosition && savedPosition > 10 && (
+      {/* {isHost && savedPosition && savedPosition > 10 && (
         <div style={{
           position: 'absolute',
           top: '50%',
@@ -271,7 +271,17 @@ export default function VideoPlayer({
           <div style={{ display: 'flex', gap: 12 }}>
             <button
               onClick={onResumePosition}
-              className='nav-btn-primary'
+              style={{
+                flex: 1,
+                padding: '12px',
+                backgroundColor: 'rgba(200, 118, 255, 0.85)',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: 14
+              }}
             >
               Resume
             </button>
@@ -293,7 +303,7 @@ export default function VideoPlayer({
             </button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Sync Quality Indicator */}
       <div
@@ -328,7 +338,6 @@ export default function VideoPlayer({
           HOST
         </div>
       )}
-
 
       {(!isHost && mediaUrl) && (
         <div

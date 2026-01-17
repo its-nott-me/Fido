@@ -51,7 +51,7 @@ export default function MockupHUD() {
                     <div className="hud-line bottom-left"></div>
                     <div className="hud-line bottom-right"></div>
 
-                    <div className="hud-data-box">
+                    <div className="hud-data-box hud-box-move">
                         <div className="data-row"><span>SYNC</span> [100%]</div>
                         <div className="data-row"><span>PING</span> [34MS]</div>
                         <div className="data-row"><span>CORE</span> [STABLE]</div>

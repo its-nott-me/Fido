@@ -26,11 +26,51 @@ export async function getMediaUrl(key, userId) {
     return `${baseUrl}/${key}`;
 }
 
+const STORAGE_LIMIT_BYTES = 9 * 1024 * 1024 * 1024; // 9GB
+
+/**
+ * Calculate the total size of all objects in the R2 bucket.
+ */
+export async function getTotalBucketSize() {
+    try {
+        let totalSize = 0;
+        let isTruncated = true;
+        let continuationToken = undefined;
+
+        while (isTruncated) {
+            const command = new ListObjectsV2Command({
+                Bucket: env.r2BucketName,
+                ContinuationToken: continuationToken,
+            });
+
+            const response = await r2.send(command);
+            if (response.Contents) {
+                totalSize += response.Contents.reduce((sum, obj) => sum + (obj.Size || 0), 0);
+            }
+
+            isTruncated = response.IsTruncated;
+            continuationToken = response.NextContinuationToken;
+        }
+
+        return totalSize;
+    } catch (err) {
+        console.error("Error calculating bucket size:", err);
+        return 0; // Fallback to 0 if list fails
+    }
+}
+
 /**
  * Uploads a file buffer to R2.
  */
 export async function uploadToR2(key, body, contentType) {
     try {
+        // Enforce storage guard
+        const currentSize = await getTotalBucketSize();
+        if (currentSize >= STORAGE_LIMIT_BYTES) {
+            console.error(`Upload rejected: Storage limit reached (${(currentSize / 1024 / 1024 / 1024).toFixed(2)} GB / 9 GB)`);
+            throw new Error("Storage limit reached. Cannot upload more files.");
+        }
+
         const command = new PutObjectCommand({
             Bucket: env.r2BucketName,
             Key: key,
@@ -40,7 +80,8 @@ export async function uploadToR2(key, body, contentType) {
 
         return await r2.send(command);
     } catch (err) {
-        console.error(err);
+        console.error("error in uploadToR2: ", err.message);
+        throw err;
     }
 }
 

@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 interface User {
     id: number;
     username: string;
+    profileImageUrl?: string | null;
 }
 
 interface AuthContextType {
@@ -10,6 +11,7 @@ interface AuthContextType {
     token: string | null;
     login: (userData: User, token: string) => void;
     logout: () => void;
+    updateProfileImage: (url: string) => void;
     loading: boolean;
 }
 
@@ -25,17 +27,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const savedToken = localStorage.getItem('token');
 
         if (savedUser && savedToken) {
-            setUser(JSON.parse(savedUser));
+            const parsedUser = JSON.parse(savedUser);
+            setUser(parsedUser);
             setToken(savedToken);
+            // Verify/refresh user data from backend
+            fetchUserProfile(savedToken, parsedUser);
+        } else {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
+
+    const fetchUserProfile = async (authToken: string, currentUser: User) => {
+        try {
+            const response = await fetch('http://localhost:3001/api/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            if (response.ok) {
+                const fullUser = await response.json();
+                setUser(fullUser);
+                localStorage.setItem('user', JSON.stringify(fullUser));
+            }
+        } catch (err) {
+            console.error('Failed to fetch profile:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const login = (userData: User, authToken: string) => {
         setUser(userData);
         setToken(authToken);
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('token', authToken);
+        fetchUserProfile(authToken, userData);
     };
 
     const logout = () => {
@@ -45,8 +71,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('token');
     };
 
+    const updateProfileImage = (url: string) => {
+        if (user) {
+            const updatedUser = { ...user, profileImageUrl: url };
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, token, login, logout, updateProfileImage, loading }}>
             {children}
         </AuthContext.Provider>
     );

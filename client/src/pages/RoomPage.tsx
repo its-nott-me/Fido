@@ -7,8 +7,10 @@ import { SyncEngine } from '../SyncEngine';
 import { WebRTCManager } from '../WebRTCManager';
 import './RoomPage.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faShareNodes } from '@fortawesome/free-solid-svg-icons';
+import { faUserGear, faCommentDots, faCopy } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../context/AuthContext';
+import Chat from '../components/Chat';
+import ProfileSettings from '../components/ProfileSettings';
 
 function generatePeerId() {
     return `peer-${Math.random().toString(36).substr(2, 9)}`;
@@ -24,7 +26,7 @@ export default function RoomPage() {
     const [syncEnabled, setSyncEnabled] = useState(true);
     const [hasInteracted, setHasInteracted] = useState(false);
     const [savedPosition, setSavedPosition] = useState<number | null>(null);
-    const [showResumeUI, setShowResumeUI] = useState(false);
+    // const [showResumeUI, setShowResumeUI] = useState(false);
     const [peerId] = useState(generatePeerId());
     const [webrtcConnections, setWebrtcConnections] = useState<string[]>([]);
 
@@ -35,6 +37,11 @@ export default function RoomPage() {
     const [showGallery, setShowGallery] = useState(false);
     const [passwordRequired, setPasswordRequired] = useState(false);
     const [passwordInput, setPasswordInput] = useState('');
+    const [messages, setMessages] = useState<any[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [showChat, setShowChat] = useState(false);
+    const [showProfile, setShowProfile] = useState(false);
+    const [copied, setCopied] = useState(false);
     const heartbeatIntervalRef = useRef<number | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const webrtcRef = useRef<WebRTCManager | null>(null);
@@ -59,11 +66,11 @@ export default function RoomPage() {
             syncEngineRef.current = new SyncEngine(webrtcRef.current, clockSyncRef.current);
 
             syncEngineRef.current.setSessionId(sessionId!);
-            const saved = syncEngineRef.current.getSavedPosition();
-            if (saved) {
-                setSavedPosition(saved);
-                setShowResumeUI(true);
-            }
+            // const saved = syncEngineRef.current.getSavedPosition();
+            // if (saved) {
+            //     setSavedPosition(saved);
+            //     // setShowResumeUI(true);
+            // }
 
             webrtcRef.current.onConnectionStateChange = () => {
                 setWebrtcConnections(webrtcRef.current?.getConnectedPeers() || []);
@@ -152,6 +159,12 @@ export default function RoomPage() {
                             clockSyncRef.current?.setWebRTC(webrtcRef.current, message.newHost);
                         }
                         break;
+                    case 'chat-message':
+                        setMessages(prev => [...prev, message]);
+                        if (!showChat && message.username !== user?.username) {
+                            setUnreadCount(prev => prev + 1);
+                        }
+                        break;
                 }
             } catch (err) {
                 console.error('Error handling message:', err);
@@ -185,19 +198,19 @@ export default function RoomPage() {
         connect(passwordInput);
     };
 
-    const handleResumePosition = () => {
-        const videoElement = document.querySelector('video') as HTMLVideoElement;
-        if (videoElement && savedPosition) {
-            videoElement.currentTime = savedPosition;
-        }
-        setShowResumeUI(false);
-    };
+    // const handleResumePosition = () => {
+    //     const videoElement = document.querySelector('video') as HTMLVideoElement;
+    //     if (videoElement && savedPosition) {
+    //         videoElement.currentTime = savedPosition;
+    //     }
+    //     setShowResumeUI(false);
+    // };
 
-    const handleDismissResume = () => {
-        syncEngineRef.current?.clearSavedPosition();
-        setShowResumeUI(false);
-        setSavedPosition(null);
-    };
+    // const handleDismissResume = () => {
+    //     syncEngineRef.current?.clearSavedPosition();
+    //     setShowResumeUI(false);
+    //     setSavedPosition(null);
+    // };
 
     const handleJoinClick = async () => {
         const videoElement = document.querySelector('video');
@@ -227,6 +240,22 @@ export default function RoomPage() {
         }
     };
 
+    const handleSendMessage = (text: string) => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+                type: 'chat-message',
+                username: user?.username,
+                profileImageUrl: user?.profileImageUrl,
+                text
+            }));
+        }
+    };
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(sessionId!);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+    }
 
     if (!user) {
         return (
@@ -245,12 +274,13 @@ export default function RoomPage() {
                 <div className="room-info">
                     <h1>ID: {sessionId} {" "}
                         <FontAwesomeIcon
-                            onClick={() => {
-                                navigator.clipboard.writeText(sessionId!);
-                            }}
-                            icon={faShareNodes}
+                            onClick={handleCopy}
+                            icon={faCopy}
                             className='share-icon'
                         />
+                        {copied &&
+                            <span className='copied'>copied</span>
+                        }
                     </h1>
                     <span className="session-tag">FIDO <span className="dot">/</span> STREAMING</span>
                 </div>
@@ -267,7 +297,7 @@ export default function RoomPage() {
                             }}
                             className="nav-btn-primary action-btn"
                         >
-                            INVITE
+                            Invite
                         </button>
 
                         {isHost && (
@@ -275,12 +305,39 @@ export default function RoomPage() {
                                 onClick={() => setShowGallery(!showGallery)}
                                 className="nav-btn-primary action-btn"
                             >
-                                {showGallery ? 'CLOSE ARCHIVE' : 'SELECT MEDIA'}
+                                {showGallery ? 'Close Archive' : 'Select Media'}
                             </button>
                         )}
+                        <button
+                            onClick={() => setShowProfile(true)}
+                            className="nav-btn-primary action-btn"
+                        >
+                            <FontAwesomeIcon icon={faUserGear} />
+                        </button>
                     </div>
                 </div>
             </header>
+
+            {showProfile && <ProfileSettings onClose={() => setShowProfile(false)} />}
+
+            <button
+                className={`chat-toggle-btn ${showChat ? 'active' : ''}`}
+                onClick={() => {
+                    setShowChat(!showChat);
+                    if (!showChat) setUnreadCount(0);
+                }}
+            >
+                <FontAwesomeIcon icon={faCommentDots} />
+                {unreadCount > 0 && !showChat && <span className="chat-badge">{unreadCount}</span>}
+            </button>
+
+            {showChat && (
+                <Chat
+                    messages={messages}
+                    onSendMessage={handleSendMessage}
+                    onClose={() => setShowChat(false)}
+                />
+            )}
 
             <main className="player-container glass-module">
                 <div className="mockup-header">
@@ -306,9 +363,9 @@ export default function RoomPage() {
                                 mediaId={currentMediaId}
                                 syncEnabled={syncEnabled}
                                 onSyncToggle={handleSyncToggle}
-                                savedPosition={showResumeUI ? savedPosition : null}
-                                onResumePosition={handleResumePosition}
-                                onDismissResume={handleDismissResume}
+                            // savedPosition={showResumeUI ? savedPosition : null}
+                            // onResumePosition={handleResumePosition}
+                            // onDismissResume={handleDismissResume}
                             />
                         </div>
                     ) : (
@@ -341,13 +398,17 @@ export default function RoomPage() {
                         </div>
                     )}
 
-                    {showGallery && isHost && (
-                        <div className="gallery-overlay glass-module">
-                            <Gallery onSelect={(media) => handleMediaSelect(media.r2_key)} />
-                        </div>
-                    )}
                 </div>
             </main>
+
+            {showGallery && isHost && (
+                <div className="gallery-overlay glass-module">
+                    <Gallery
+                        onSelect={(media) => handleMediaSelect(media.r2_key)}
+                        onClose={() => setShowGallery(false)}
+                    />
+                </div>
+            )}
 
             {passwordRequired && (
                 <div className="password-overlay">

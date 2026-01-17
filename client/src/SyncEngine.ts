@@ -51,44 +51,44 @@ export class SyncEngine {
 
   setSessionId(sessionId: string) {
     this.sessionId = sessionId;
-    this.startSavingPosition();
+    // this.startSavingPosition();
   }
 
-  private startSavingPosition() {
-    // Save position every 5 seconds
-    this.positionSaveInterval = window.setInterval(() => {
-      if (this.videoElement && this.sessionId) {
-        const position = this.videoElement.currentTime;
-        localStorage.setItem(`session-${this.sessionId}-position`, position.toString());
-        localStorage.setItem(`session-${this.sessionId}-timestamp`, Date.now().toString());
-      }
-    }, 5000);
-  }
+  // private startSavingPosition() {
+  //   // Save position every 5 seconds
+  //   this.positionSaveInterval = window.setInterval(() => {
+  //     if (this.videoElement && this.sessionId) {
+  //       const position = this.videoElement.currentTime;
+  //       localStorage.setItem(`session-${this.sessionId}-position`, position.toString());
+  //       localStorage.setItem(`session-${this.sessionId}-timestamp`, Date.now().toString());
+  //     }
+  //   }, 5000);
+  // }
 
-  getSavedPosition(): number | null {
-    if (!this.sessionId) return null;
+  // getSavedPosition(): number | null {
+  //   if (!this.sessionId) return null;
 
-    const savedPosition = localStorage.getItem(`session-${this.sessionId}-position`);
-    const savedTime = localStorage.getItem(`session-${this.sessionId}-timestamp`);
+  //   const savedPosition = localStorage.getItem(`session-${this.sessionId}-position`);
+  //   const savedTime = localStorage.getItem(`session-${this.sessionId}-timestamp`);
 
-    if (!savedPosition || !savedTime) return null;
+  //   if (!savedPosition || !savedTime) return null;
 
-    // Only resume if saved within last 24 hours
-    const hoursSinceSave = (Date.now() - parseInt(savedTime)) / (1000 * 60 * 60);
-    if (hoursSinceSave > 24) {
-      this.clearSavedPosition();
-      return null;
-    }
+  //   // Only resume if saved within last 24 hours
+  //   const hoursSinceSave = (Date.now() - parseInt(savedTime)) / (1000 * 60 * 60);
+  //   if (hoursSinceSave > 24) {
+  //     this.clearSavedPosition();
+  //     return null;
+  //   }
 
-    return parseFloat(savedPosition);
-  }
+  //   return parseFloat(savedPosition);
+  // }
 
-  clearSavedPosition() {
-    if (this.sessionId) {
-      localStorage.removeItem(`session-${this.sessionId}-position`);
-      localStorage.removeItem(`session-${this.sessionId}-timestamp`);
-    }
-  }
+  // clearSavedPosition() {
+  //   if (this.sessionId) {
+  //     localStorage.removeItem(`session-${this.sessionId}-position`);
+  //     localStorage.removeItem(`session-${this.sessionId}-timestamp`);
+  //   }
+  // }
 
   private handleDataChannelMessage(fromPeerId: string, message: any) {
     switch (message.type) {

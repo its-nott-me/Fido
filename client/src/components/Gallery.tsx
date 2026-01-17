@@ -16,6 +16,7 @@ interface Media {
 interface GalleryProps {
     refreshTrigger?: number;
     onSelect?: (media: Media) => void;
+    onClose?: () => void;
 }
 
 type ThumbnailProps = {
@@ -37,7 +38,7 @@ const Thumbnail: React.FC<ThumbnailProps> = ({ r2WorkerURL, thumbnailKey }) => {
     )
 }
 
-export default function Gallery({ refreshTrigger = 0, onSelect }: GalleryProps) {
+export default function Gallery({ refreshTrigger = 0, onSelect, onClose }: GalleryProps) {
     const [medias, setMedias] = useState<Media[]>([]);
     const [loading, setLoading] = useState(true);
     const [deleteConfig, setDeleteConfig] = useState<{ show: boolean, media: Media | null }>({ show: false, media: null });
@@ -107,6 +108,12 @@ export default function Gallery({ refreshTrigger = 0, onSelect }: GalleryProps) 
 
     return (
         <>
+            {onClose && (
+                <div className="gallery-header">
+                    <h3>ARCHIVE</h3>
+                    <button className="gallery-close-btn" onClick={onClose}>×</button>
+                </div>
+            )}
             <div className="gallery-grid">
                 {medias.map((media) => (
                     <div

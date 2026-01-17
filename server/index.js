@@ -5,6 +5,7 @@ import cors from 'cors';
 import mediaRouter from './routes/media.route.js';
 import authRouter from './routes/auth.route.js';
 import { query } from './db.js';
+import { initCleanupScheduler } from './services/cleanup.service.js';
 
 const app = express();
 app.use(cors({ origin: 'http://localhost:3000' }));
@@ -237,6 +238,18 @@ wss.on('connection', (ws) => {
           }
           break;
         }
+
+        case 'chat-message': {
+          broadcast(currentSession, {
+            type: 'chat-message',
+            peerId: peerId,
+            username: message.username,
+            text: message.text,
+            profileImageUrl: message.profileImageUrl,
+            timestamp: Date.now()
+          });
+          break;
+        }
       }
     } catch (err) {
       console.error('Error handling message:', err);
@@ -287,6 +300,9 @@ wss.on('connection', (ws) => {
 
 app.use('/media', mediaRouter);
 app.use('/api/auth', authRouter);
+
+// Initialize Schedulers
+initCleanupScheduler();
 
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
