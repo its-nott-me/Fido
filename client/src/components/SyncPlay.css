@@ -52,6 +52,10 @@
     background: rgba(255, 255, 255, 0.08);
 }
 
+.glass-input::placeholder {
+    color: rgba(255, 255, 255, 0.44);
+}
+
 .btn-join {
     padding: 0 1.5rem;
     background: var(--brand-primary);
@@ -119,4 +123,10 @@
     text-align: center;
     border: none;
     cursor: pointer;
+}
+
+@media (max-width: 480px) {
+    .sync-play-container {
+        padding: 1.5rem;
+    }
 }

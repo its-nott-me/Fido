@@ -29,7 +29,7 @@ export default function Dashboard() {
             <header className="dashboard-header-section">
                 <div className="header-info">
                     <h1>Control Center</h1>
-                    <p>Manage your sessions and media gallery</p>
+                    <p>Manage your media gallery</p>
                 </div>
             </header>
 

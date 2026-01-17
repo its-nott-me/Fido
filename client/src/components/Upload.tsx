@@ -62,15 +62,6 @@ export default function Upload({ onUploadSuccess }: { onUploadSuccess: () => voi
     setError("");
 
     try {
-        // const { data } = await axios.post(
-        // "/media/presign",
-        // {
-        //     filename: file.name,
-        //     contentType: file.type,
-        // },
-        // { headers: { Authorization: `Bearer ${token}` } }
-        // );
-
         await axios.post("/media/upload", file, {
         headers: {
             "Content-Type": file.type,
@@ -87,16 +78,6 @@ export default function Upload({ onUploadSuccess }: { onUploadSuccess: () => voi
             startProgressAnimation();
         },
         });
-
-        // await axios.post(
-        // "/media/complete",
-        // {
-        //     key: data.key,
-        //     filename: file.name,
-        //     size: file.size,
-        // },
-        // { headers: { Authorization: `Bearer ${token}` } }
-        // );
 
         targetProgress.current = 100;
         setProgress(100);

@@ -45,8 +45,18 @@
 }
 
 .feature-icon {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--brand-primary);
+}
+
+.feature-card:hover .feature-icon {
+    transform: scale(1.08);
+    opacity: 1;
+    transition: all 0.5s ease-in-out;
 }
 
 .feature-card h3 {
@@ -61,4 +71,26 @@
     line-height: 1.7;
     margin: 0;
     font-size: 1rem;
+}
+
+.shine-effect { 
+  position: relative; 
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.shine-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 100%);
+  transform: skewX(-30deg);
+  transition: all 0.5s ease;
+}
+
+.shine-effect:hover::before {
+  left: 150%;
 }

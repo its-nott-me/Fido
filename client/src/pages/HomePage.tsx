@@ -3,6 +3,9 @@ import Features from '../components/Features';
 import VisualEffects from '../components/VisualEffects';
 import MockupHUD from '../components/MockupHUD';
 import './HomePage.css';
+import { Linkedin, Github } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGithub, faLinkedin } from '@fortawesome/free-brands-svg-icons';
 
 export default function HomePage() {
     return (
@@ -19,12 +22,12 @@ export default function HomePage() {
                             <div className="stat-label">AVR LATENCY</div>
                         </div>
                         <div className="stat-item">
-                            <div className="stat-value">99.9%</div>
+                            <div className="stat-value">99%</div>
                             <div className="stat-label">SYNC ACCURACY</div>
                         </div>
                         <div className="stat-item">
-                            <div className="stat-value">E2EE</div>
-                            <div className="stat-label">SIGNAL SECURITY</div>
+                            <div className="stat-value">HLS</div>
+                            <div className="stat-label">FAST STREAMING</div>
                         </div>
                     </div>
                 </section>
@@ -32,7 +35,7 @@ export default function HomePage() {
                 <section className="preview-section">
                     <div className="preview-header">
                         <h2 className="section-title">Visual HUD Overview</h2>
-                        <p className="section-subtitle">A zero-gravity interface for high-focus synchronization</p>
+                        <p className="section-subtitle">An interface for high-focus synchronization</p>
                     </div>
                     <MockupHUD />
                 </section>
@@ -41,11 +44,23 @@ export default function HomePage() {
 
                 <section className="cta-section">
                     <div className="glass-module cta-card">
-                        <h2>Ready to Sync?</h2>
-                        <p>Join thousands of users experiencing perfectly synchronized media today.</p>
+                        <h2>Start a Synchronized Session</h2>
+                        <p>
+                            Create a room, upload media, and sync across devices.
+                        </p>
                         <div className="cta-buttons">
-                            <button className="nav-btn-primary" onClick={() => window.location.href = '/register'}>Initialize Identity</button>
-                            <button className="glass-module" onClick={() => window.location.href = '/login'}>Signal Dashboard</button>
+                            <button
+                                className="nav-btn-primary"
+                                onClick={() => window.location.href = '/register'}
+                            >
+                                Register
+                            </button>
+                            <button
+                                className="glass-module"
+                                onClick={() => window.location.href = '/login'}
+                            >
+                                Sign in
+                            </button>
                         </div>
                     </div>
                 </section>
@@ -53,9 +68,21 @@ export default function HomePage() {
 
             <footer className="footer">
                 <div className="footer-content">
-                    <p>© 2026 FIDO. Redefining Shared Experiences.</p>
+                    <p>
+                        © 2026 FIDO - A portfolio project by Vivek S M
+                    </p>
+                    <div className="footer-links">
+                        <a href="https://github.com/its-nott-me" target="_blank" rel="noreferrer">
+                            <FontAwesomeIcon icon={faGithub} size='2x' />
+                        </a>
+                        <span>·</span>
+                        <a href="https://www.linkedin.com/in/vivek-sm-361589340/" target="_blank" rel="noreferrer">
+                            <FontAwesomeIcon icon={faLinkedin} size='2x' />
+                        </a>
+                    </div>
                 </div>
             </footer>
+
         </div>
     );
 }

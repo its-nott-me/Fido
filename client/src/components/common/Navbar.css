@@ -59,8 +59,37 @@
     font-weight: 600;
     box-shadow: var(--shadow-purple);
     transition: transform 0.2s;
+    border: none;
+    cursor: pointer;
 }
 
 .nav-btn-primary:hover {
     transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        padding: 0 1rem;
+        top: 0.5rem;
+        width: 92%;
+    }
+
+    .nav-links {
+        gap: 1rem;
+    }
+
+    .nav-logo {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .user-welcome {
+        display: none;
+    }
+
+    .nav-btn-primary {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.9rem;
+    }
 }

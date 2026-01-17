@@ -87,12 +87,12 @@ export default function RegisterPage() {
                         disabled={isSubmitting}
                         className="nav-btn-primary auth-button"
                     >
-                        {isSubmitting ? 'Processing...' : 'Initialize Identity'}
+                        {isSubmitting ? 'Processing...' : 'Register'}
                     </button>
                 </form>
 
                 <div className="auth-footer">
-                    Already registered? <Link to="/login">Signal In</Link>
+                    Already registered? <Link to="/login">Sign In</Link>
                 </div>
             </div>
         </div>

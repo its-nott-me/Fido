@@ -6,6 +6,9 @@ import { ClockSync } from '../ClockSync';
 import { SyncEngine } from '../SyncEngine';
 import { WebRTCManager } from '../WebRTCManager';
 import './RoomPage.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faShareNodes } from '@fortawesome/free-solid-svg-icons';
+import { useAuth } from '../context/AuthContext';
 
 function generatePeerId() {
     return `peer-${Math.random().toString(36).substr(2, 9)}`;
@@ -15,6 +18,7 @@ export default function RoomPage() {
     const { sessionId } = useParams<{ sessionId: string }>();
     const navigate = useNavigate();
 
+    const { user } = useAuth();
     const [connected, setConnected] = useState(false);
     const [isHost, setIsHost] = useState(false);
     const [syncEnabled, setSyncEnabled] = useState(true);
@@ -223,15 +227,30 @@ export default function RoomPage() {
         }
     };
 
+
+    if (!user) {
+        return (
+            <div className="dashboard-auth-notice">
+                <div className="glass-module notice-card">
+                    <h2>Access Denied</h2>
+                    <p>Please login to access the room.</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="room-page">
             <header className="room-header glass-module">
                 <div className="room-info">
                     <h1>ID: {sessionId} {" "}
-                        <svg xmlns="www.w3.org" cursor="pointer" width="16" height="16" fill="currentColor" className="bi bi-clipboard" viewBox="0 0 16 16">
-                            <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z" />
-                            <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z" />
-                        </svg>
+                        <FontAwesomeIcon
+                            onClick={() => {
+                                navigator.clipboard.writeText(sessionId!);
+                            }}
+                            icon={faShareNodes}
+                            className='share-icon'
+                        />
                     </h1>
                     <span className="session-tag">FIDO <span className="dot">/</span> STREAMING</span>
                 </div>
@@ -248,7 +267,7 @@ export default function RoomPage() {
                             }}
                             className="nav-btn-primary action-btn"
                         >
-                            SHARE SIGNAL
+                            INVITE
                         </button>
 
                         {isHost && (
@@ -317,7 +336,7 @@ export default function RoomPage() {
                                 onClick={handleJoinClick}
                                 className="nav-btn-primary btn-join-session"
                             >
-                                JOIN PERSPECTIVE
+                                WATCH NOW!
                             </button>
                         </div>
                     )}
@@ -333,13 +352,13 @@ export default function RoomPage() {
             {passwordRequired && (
                 <div className="password-overlay">
                     <div className="password-card glass-module">
-                        <h2>Encrypted Session</h2>
-                        <p>Credentials required to access this signal</p>
+                        <h2>Password Required</h2>
+                        {/* <p>Credentials required to access this signal</p> */}
 
                         <form onSubmit={handlePasswordSubmit}>
                             <input
                                 type="password"
-                                placeholder="ACCESS KEY"
+                                placeholder="Enter Password"
                                 autoFocus
                                 value={passwordInput}
                                 onChange={(e) => setPasswordInput(e.target.value)}
@@ -350,7 +369,7 @@ export default function RoomPage() {
                                 type="submit"
                                 className="nav-btn-primary btn-password-submit action-btn"
                             >
-                                VERIFY & ENTER
+                                SUBMIT
                             </button>
 
                             <button
@@ -358,7 +377,7 @@ export default function RoomPage() {
                                 onClick={() => navigate('/')}
                                 className="btn-cancel-room"
                             >
-                                ABORT MISSION
+                                CANCEL
                             </button>
                         </form>
                     </div>

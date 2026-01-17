@@ -142,7 +142,7 @@
     position: relative;
     flex: 1;
     background: black;
-    min-height: 400px;
+    /* min-height: 400px; */
     /* Base height for small screens */
     aspect-ratio: 16/9;
     display: flex;
@@ -356,4 +356,14 @@
     color: var(--text-dim);
     margin-top: 1.5rem;
     cursor: pointer;
+}
+
+.share-icon {
+    color: var(--brand-primary);
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+
+.share-icon:hover {
+    transform: scale(1.15);
 }

@@ -22,7 +22,7 @@ export default function SyncPlay() {
 
     return (
         <div className="sync-play-container glass-module">
-            <h2 className="section-title">Sync Play</h2>
+            <h2 className="section-title">Rooms</h2>
 
             <div className="input-group">
                 <label className="input-label">Join Existing Room</label>

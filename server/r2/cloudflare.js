@@ -1,5 +1,5 @@
 import { env } from "../loadEnv.js";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectsCommand, ListObjectsV2Command, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 export const r2 = new S3Client({
     region: "auto",
@@ -22,7 +22,7 @@ export async function getMediaUrl(key, userId) {
     const baseUrl = env.r2WorkerUrl.endsWith('/')
         ? env.r2WorkerUrl.slice(0, -1)
         : env.r2WorkerUrl;
-        
+
     return `${baseUrl}/${key}`;
 }
 
@@ -41,5 +41,55 @@ export async function uploadToR2(key, body, contentType) {
         return await r2.send(command);
     } catch (err) {
         console.error(err);
+    }
+}
+
+/**
+ * Deletes a single object from R2.
+ */
+export async function deleteObjectFromR2(key) {
+    try {
+        const command = new DeleteObjectCommand({
+            Bucket: env.r2BucketName,
+            Key: key,
+        });
+        return await r2.send(command);
+    } catch (err) {
+        console.error(`Error deleting object ${key}:`, err);
+        throw err;
+    }
+}
+
+/**
+ * Deletes all objects in R2 that start with a specific prefix.
+ * Useful for HLS videos where multiple files share a filename prefix.
+ */
+export async function deleteObjectsByPrefix(prefix) {
+    try {
+        // 1. List all objects with the prefix
+        const listCommand = new ListObjectsV2Command({
+            Bucket: env.r2BucketName,
+            Prefix: prefix,
+        });
+        const listResponse = await r2.send(listCommand);
+
+        if (!listResponse.Contents || listResponse.Contents.length === 0) {
+            return;
+        }
+
+        // 2. Prepare for batch deletion
+        const objectsToDelete = listResponse.Contents.map((obj) => ({ Key: obj.Key }));
+
+        const deleteCommand = new DeleteObjectsCommand({
+            Bucket: env.r2BucketName,
+            Delete: {
+                Objects: objectsToDelete,
+            },
+        });
+
+        return await r2.send(deleteCommand);
+    } catch (err) {
+        console.error(`Error deleting objects with prefix ${prefix}:`, err);
+        throw err;
     }
 }

@@ -183,3 +183,57 @@
     background: var(--brand-primary);
     box-shadow: 0 0 10px var(--brand-glow);
 }
+
+@media (max-width: 768px) {
+    .mockup-container {
+        margin: 2rem auto;
+    }
+
+    .mockup-content {
+        padding: 1.5rem;
+    }
+
+    .mockup-hud-elements {
+        inset: 1.5rem;
+    }
+
+    .hud-line {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .mockup-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .mockup-content {
+        padding: 1rem;
+    }
+
+    .mockup-hud-elements {
+        inset: 0.5rem;
+    }
+
+    .hud-line {
+        width: 20px;
+        height: 20px;
+        border-width: 1px;
+    }
+
+    .hud-data-box {
+        bottom: 0.5rem;
+        right: 0.5rem;
+        padding: 0.5rem;
+        font-size: 0.55rem;
+    }
+
+    .play-icon {
+        font-size: 2.5rem;
+    }
+
+    .mockup-footer {
+        padding: 0.75rem 1.5rem;
+    }
+}

@@ -72,48 +72,48 @@ export default function VideoPlayer({
   useEffect(() => {
     const video = videoRef.current;
     let hls: Hls | null = null;
-    
-    if(!mediaUrl || !video) return;
-    
+
+    if (!mediaUrl || !video) return;
+
     (async () => {
       const type = await detectStreamType(mediaUrl);
 
-      if(type == 'hls' && Hls.isSupported()){
+      if (type == 'hls' && Hls.isSupported()) {
         hls = new Hls({ lowLatencyMode: false });
-        
+
         hls.loadSource(mediaUrl);
         hls.attachMedia(video);
-        
+
         hls.on(Hls.Events.ERROR, (_, data) => {
-          if(data.fatal){
+          if (data.fatal) {
             console.error("HLS fatal error:", data);
             hls?.destroy();
           }
         });
-      } else if(video.canPlayType("application/vnd.apple.mpegurl")){
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = mediaUrl;
       }
     })();
-    }, [mediaUrl]);
+  }, [mediaUrl]);
 
-  async function detectStreamType (mediaUrl: string): Promise<"hls" | "mp4" | "unknown">{
-    if(mediaUrl.includes('.m3u8')) return "hls";
+  async function detectStreamType(mediaUrl: string): Promise<"hls" | "mp4" | "unknown"> {
+    if (mediaUrl.includes('.m3u8')) return "hls";
 
-    try{
-      const head = await fetch(mediaUrl, { method: "HEAD"});
+    try {
+      const head = await fetch(mediaUrl, { method: "HEAD" });
       const type = head.headers.get("content-type") || "";
-      if(type.includes("mpegurl")) return "hls";
-    } catch {}
+      if (type.includes("mpegurl")) return "hls";
+    } catch { }
 
-    try{
+    try {
       const res = await fetch(mediaUrl, {
-        headers: {Range: "bytes=0-200"},
+        headers: { Range: "bytes=0-200" },
       });
       const text = await res.text();
-      if(text.startsWith("EXTM3U")) return "hls";
-    } catch {}
+      if (text.startsWith("EXTM3U")) return "hls";
+    } catch { }
 
-    if(mediaUrl.includes(".mp4")) return "mp4";
+    if (mediaUrl.includes(".mp4")) return "mp4";
 
     return "unknown";
   }
@@ -192,6 +192,9 @@ export default function VideoPlayer({
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
           }}
           autoPlay={!mediaUrl}
+          onLoadedData={() => {
+            console.log('VideoPlayer: Video loaded successfully');
+          }}
         />
       </div>
       {/* Buffer Health Bar */}
@@ -247,7 +250,7 @@ export default function VideoPlayer({
         </div>
       )} */}
 
-      {savedPosition && savedPosition > 10 && (
+      {isHost && savedPosition && savedPosition > 10 && (
         <div style={{
           position: 'absolute',
           top: '50%',
@@ -268,17 +271,7 @@ export default function VideoPlayer({
           <div style={{ display: 'flex', gap: 12 }}>
             <button
               onClick={onResumePosition}
-              style={{
-                flex: 1,
-                padding: '12px',
-                backgroundColor: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: 8,
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontSize: 14
-              }}
+              className='nav-btn-primary'
             >
               Resume
             </button>

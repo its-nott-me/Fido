@@ -1,7 +1,6 @@
-import { env } from '../loadEnv.js';
 import express from 'express';
 import { query } from '../db.js';
-import { getMediaUrl, uploadToR2 } from '../r2/cloudflare.js';
+import { getMediaUrl, uploadToR2, deleteObjectsByPrefix } from '../r2/cloudflare.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
@@ -40,29 +39,60 @@ export function extractThumbnailFromBuffer(videoBuffer) {
 
 // List user's media
 router.get('/list', verifyToken, async (req, res) => {
-    try {
-        const result = await query(
-            'SELECT * FROM medias WHERE user_id = $1 ORDER BY created_at DESC',
-            [req.user.id]
-        );
-        res.json(result.rows);
-    } catch (error) {
-        console.error('List media error:', error);
-        res.status(500).json({ error: 'Failed to fetch media collection' });
-    }
+  try {
+    const result = await query(
+      'SELECT * FROM medias WHERE user_id = $1 ORDER BY created_at DESC',
+      [req.user.id]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('List media error:', error);
+    res.status(500).json({ error: 'Failed to fetch media collection' });
+  }
 });
 
 // Get media URL (Public for now, or could be protected)
 router.get('/:mediaId', verifyToken, async (req, res) => {
-    const mediaId = req.params.mediaId;
-    try {
-        const mediaUrl = await getMediaUrl(mediaId, req.user.id);
-        res.status(200).json({ url: mediaUrl });
-        // console.log(mediaUrl, 'key: ', mediaId, req.user.id)
-    } catch (error) {
-        console.error("Error generating signed URL:", error);
-        res.status(500).json({ error: "Failed to generate media URL" });
+  const mediaId = req.params.mediaId;
+  try {
+    const mediaUrl = await getMediaUrl(mediaId, req.user.id);
+    res.status(200).json({ url: mediaUrl });
+    // console.log(mediaUrl, 'key: ', mediaId, req.user.id)
+  } catch (error) {
+    console.error("Error generating signed URL:", error);
+    res.status(500).json({ error: "Failed to generate media URL" });
+  }
+});
+
+// Delete media
+router.delete('/:id', verifyToken, async (req, res) => {
+  const mediaId = req.params.id;
+  try {
+    // 1. Check if media exists and belongs to the user
+    const mediaResult = await query(
+      'SELECT * FROM medias WHERE id = $1 AND user_id = $2',
+      [mediaId, req.user.id]
+    );
+
+    if (mediaResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Media not found or unauthorized' });
     }
+
+    const media = mediaResult.rows[0];
+    const filenamePrefix = media.filename;
+
+    // 2. Delete from R2 (both index/segments and thumbnail)
+    // Since all related files start with the filename, we can use the prefix deletion
+    await deleteObjectsByPrefix(filenamePrefix);
+
+    // 3. Delete from DB
+    await query('DELETE FROM medias WHERE id = $1', [mediaId]);
+
+    res.json({ message: 'Media deleted successfully' });
+  } catch (error) {
+    console.error('Delete media error:', error);
+    res.status(500).json({ error: 'Failed to delete media' });
+  }
 });
 
 // Upload media
@@ -82,7 +112,7 @@ async function convertStreamToHls(inputStream, filename) {
         "-hls_playlist_type vod",
         "-hls_flags independent_segments",
         "-hls_segment_filename " +
-          path.join(hlsDir, `${filename}_seg_%03d.ts`),
+        path.join(hlsDir, `${filename}_seg_%03d.ts`),
       ])
 
       // ===== thumbnail ouput =====
@@ -132,10 +162,10 @@ router.post("/upload", verifyToken, async (req, res) => {
     if (!contentType || !contentType.startsWith("video/")) {
       return res.status(400).json({ error: "Only video uploads allowed" });
     }
-    if(contentLength > 1_61_06_12_736){ // >1.5gb
-      return res.status(400).json({ error: "Upload size should be less than 1.5GB"});
+    if (contentLength > 1_61_06_12_736) { // >1.5gb
+      return res.status(400).json({ error: "Upload size should be less than 1.5GB" });
     }
-    
+
     const rawFilename =
       req.headers["x-filename"] || `video_${Date.now()}`;
 

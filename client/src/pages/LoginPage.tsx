@@ -36,7 +36,6 @@ export default function LoginPage() {
             <div className="auth-card glass-module">
                 <div className="auth-header">
                     <h1>Welcome Back</h1>
-                    <p>Enter the void of synchronization</p>
                 </div>
 
                 {error && <div className="auth-error">{error}</div>}
@@ -47,7 +46,7 @@ export default function LoginPage() {
                         <input
                             type="text"
                             required
-                            placeholder="john_doe"
+                            placeholder="username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             className="auth-input"
@@ -76,7 +75,7 @@ export default function LoginPage() {
                 </form>
 
                 <div className="auth-footer">
-                    Don't have an account? <Link to="/register">Create Identity</Link>
+                    Don't have an account? <Link to="/register">Register Now!</Link>
                 </div>
             </div>
         </div>
