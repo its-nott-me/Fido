@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import './Hero.css';
 
 export default function Hero() {
-    const textRef = useRef(null);
+    const textRef = useRef<HTMLSpanElement>(null);
     useEffect(() => {
         const text = "Watch Together..";
         const typeSpeed = 120;

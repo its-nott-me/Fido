@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    const fetchUserProfile = async (authToken: string, currentUser: User) => {
+    const fetchUserProfile = async (authToken: string, _currentUser: User) => {
         try {
             const response = await api.get(`${env.API_URL}/api/auth/me`, {
                 headers: {

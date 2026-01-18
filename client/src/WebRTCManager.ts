@@ -197,5 +197,6 @@ export class WebRTCManager {
     this.dataChannels.forEach((dc) => dc.close());
     this.connections.clear();
     this.dataChannels.clear();
+    console.log(this.peerId);
   }
 }

@@ -10,6 +10,7 @@ interface VideoPlayerProps {
   mediaId: string | null;
   syncEnabled: boolean;
   onSyncToggle: (enabled: boolean) => void;
+  isMockView: boolean;
   // savedPosition: number | null;
   // onResumePosition: () => void;
   // onDismissResume: () => void;
@@ -23,17 +24,18 @@ export default function VideoPlayer({
   mediaId: initialMediaId,
   syncEnabled,
   onSyncToggle,
+  isMockView = false,
   // savedPosition,
   // onResumePosition,
   // onDismissResume
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [drift, setDrift] = useState(0);
-  const [strategy, setStrategy] = useState<DriftStrategy>('locked');
+  const [_strategy, setStrategy] = useState<DriftStrategy>('locked');
   const [showResyncUI, setShowResyncUI] = useState(false);
-  const [buffering, setBuffering] = useState(false);
+  const [_buffering, setBuffering] = useState(false);
   const [bufferHealth, setBufferHealth] = useState(1);
-  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaUrl, setMediaUrl] = useState('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8');
   const { token } = useAuth();
 
   useEffect(() => {
@@ -42,7 +44,7 @@ export default function VideoPlayer({
       getMediaUrl(initialMediaId);
     } else {
       // console.log('VideoPlayer: initialMediaId is null');
-      setMediaUrl('');
+      // setMediaUrl('');
     }
   }, [initialMediaId]);
 
@@ -182,8 +184,8 @@ export default function VideoPlayer({
           key={mediaUrl || 'default'}
           ref={videoRef}
           controls
-          muted={!mediaUrl}
-          src={mediaUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"}
+          muted={isMockView}
+          src={mediaUrl}
           style={{
             height: '100%',
             width: '100%',
@@ -191,7 +193,7 @@ export default function VideoPlayer({
             borderRadius: '8px',
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
           }}
-          autoPlay={!mediaUrl}
+          autoPlay={isMockView}
           onLoadedData={() => {
             console.log('VideoPlayer: Video loaded successfully');
           }}
@@ -221,7 +223,7 @@ export default function VideoPlayer({
       </div>
 
       {/* Buffering Overlay */}
-      {/* {buffering && (
+      {/* {_buffering && (
         <div
           style={{
             position: 'absolute',
@@ -339,7 +341,7 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {(!isHost && mediaUrl) && (
+      {(!isHost && !isMockView) && (
         <div
           style={{
             position: 'absolute',
@@ -435,10 +437,10 @@ export default function VideoPlayer({
       >
         <div>Role: {isHost ? 'HOST' : 'Viewer'}</div>
         <div>Drift: {drift.toFixed(3)}s</div>
-        <div>Strategy: {strategy}</div>
+        <div>Strategy: {_strategy}</div>
         <div>playback rate: {videoRef.current?.playbackRate.toFixed(3) || '1.000'}</div>
         <div>buffer health: {(bufferHealth * 100).toFixed(0)}%</div>
-        <div>buffering: {buffering ? 'Yes' : 'No'}</div>
+        <div>buffering: {_buffering ? 'Yes' : 'No'}</div>
       </div> */}
 
       <style>{`

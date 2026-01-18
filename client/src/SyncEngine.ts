@@ -22,7 +22,7 @@ export class SyncEngine {
   private webrtc: WebRTCManager;
   private isHost: boolean = false;
   private version: number = 0;
-  private sessionId: string = '';
+  // private _sessionId: string = '';
   private positionSaveInterval: number | null = null;
   private snapshotInterval: number | null = null;
   private serverBackupInterval: number | null = null;
@@ -49,8 +49,8 @@ export class SyncEngine {
     };
   }
 
-  setSessionId(sessionId: string) {
-    this.sessionId = sessionId;
+  setSessionId(_sessionId: string) {
+    // this.sessionId = sessionId;
     // this.startSavingPosition();
   }
 

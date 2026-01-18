@@ -65,7 +65,14 @@ export default function MockupHUD() {
 
             <div className="mockup-content">
                 <div ref={containerRef} className="mockup-video-placeholder">
-                    <VideoPlayer />
+                    <VideoPlayer
+                        isHost={false}
+                        mediaId={null}
+                        onSyncToggle={() => console.log()}
+                        syncEnabled={false}
+                        syncEngine={null}
+                        isMockView={true}
+                    />
                     <div className="scanline"></div>
                     <div className="play-icon">▶</div>
                 </div>

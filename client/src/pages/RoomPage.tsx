@@ -26,7 +26,7 @@ export default function RoomPage() {
     const [isHost, setIsHost] = useState(false);
     const [syncEnabled, setSyncEnabled] = useState(true);
     const [hasInteracted, setHasInteracted] = useState(false);
-    const [savedPosition, setSavedPosition] = useState<number | null>(null);
+    // const [savedPosition, setSavedPosition] = useState<number | null>(null);
     // const [showResumeUI, setShowResumeUI] = useState(false);
     const [peerId] = useState(generatePeerId());
     const [webrtcConnections, setWebrtcConnections] = useState<string[]>([]);
@@ -364,6 +364,7 @@ export default function RoomPage() {
                                 mediaId={currentMediaId}
                                 syncEnabled={syncEnabled}
                                 onSyncToggle={handleSyncToggle}
+                                isMockView={false}
                             // savedPosition={showResumeUI ? savedPosition : null}
                             // onResumePosition={handleResumePosition}
                             // onDismissResume={handleDismissResume}
