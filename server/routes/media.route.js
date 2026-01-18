@@ -7,35 +7,11 @@ import ffmpegPath from "ffmpeg-static";
 import { PassThrough } from "stream";
 import fs from 'fs';
 import path from 'path';
+import { env } from '../loadEnv.js';
 
 const router = express.Router();
 
 ffmpeg.setFfmpegPath(ffmpegPath);
-
-export function extractThumbnailFromBuffer(videoBuffer) {
-  return new Promise((resolve, reject) => {
-    const input = new PassThrough();
-    input.end(videoBuffer);
-
-    const output = new PassThrough();
-    const chunks = [];
-
-    output.on("data", (chunk) => chunks.push(chunk));
-    output.on("end", () => resolve(Buffer.concat(chunks)));
-    output.on("error", reject);
-
-    ffmpeg(input)
-      .inputFormat("mp4")
-      .outputOptions([
-        "-frames:v 1",
-        "-vf scale=640:-1",
-        "-q:v 2"
-      ])
-      .format("image2")
-      .on("error", reject)
-      .pipe(output);
-  });
-}
 
 // List user's media
 router.get('/list', verifyToken, async (req, res) => {
@@ -96,6 +72,38 @@ router.delete('/:id', verifyToken, async (req, res) => {
 });
 
 // Upload media
+async function optimizeMp4(inputStream, filename, mode = "faststart") {
+  const mediaDir = path.join("/tmp", filename);
+  fs.mkdirSync(mediaDir, { recursive: true });
+
+  const movflags = mode === "fragmented"
+    ? "+frag_keyframe+empty_moov"
+    : "+faststart";
+
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputStream)
+      .outputOptions([
+        "-c copy",
+        `-movflags ${movflags}`
+      ])
+      // ===== MP4 output =====
+      .output(path.join(mediaDir, `${filename}.mp4`))
+
+      // ===== thumbnail output =====
+      .output(path.join(mediaDir, `${filename}_thumb.jpg`))
+      .outputOptions([
+        "-frames:v 1",
+        "-vf scale=640:-1",
+        "-q:v 2",
+      ])
+
+      .on("start", cmd => console.log("FFmpeg (Optimize):", cmd))
+      .on("error", reject)
+      .on("end", () => resolve({ mediaDir, outputFilename: `${filename}.mp4` }))
+      .run();
+  });
+}
+
 async function convertStreamToHls(inputStream, filename) {
   const hlsDir = path.join("/tmp", filename);
   fs.mkdirSync(hlsDir, { recursive: true });
@@ -131,14 +139,22 @@ async function convertStreamToHls(inputStream, filename) {
 
 }
 
-async function uploadHlsDirectory(hlsDir, filename) {
-  const files = fs.readdirSync(hlsDir);
+async function uploadMediaDirectory(dir, filename) {
+  const files = fs.readdirSync(dir);
 
   for (const file of files) {
-    const filePath = path.join(hlsDir, file);
-    const contentType = file.endsWith(".m3u8")
-      ? "application/vnd.apple.mpegurl"
-      : "video/mp2t";
+    const filePath = path.join(dir, file);
+    let contentType = "application/octet-stream";
+
+    if (file.endsWith(".m3u8")) {
+      contentType = "application/vnd.apple.mpegurl";
+    } else if (file.endsWith(".ts")) {
+      contentType = "video/mp2t";
+    } else if (file.endsWith(".mp4")) {
+      contentType = "video/mp4";
+    } else if (file.endsWith(".jpg") || file.endsWith(".jpeg")) {
+      contentType = "image/jpeg";
+    }
 
     await uploadToR2(
       `${file}`,
@@ -146,12 +162,6 @@ async function uploadHlsDirectory(hlsDir, filename) {
       contentType
     );
   }
-
-  await uploadToR2(
-    `${filename}_thumb.jpg`,
-    fs.createReadStream(path.join(hlsDir, `${filename}_thumb.jpg`)),
-    "image/jpeg"
-  );
 }
 
 router.post("/upload", verifyToken, async (req, res) => {
@@ -180,8 +190,25 @@ router.post("/upload", verifyToken, async (req, res) => {
       .replace(/\.[^/.]+$/, "")
       .replace(/[^a-zA-Z0-9_-]/g, "");
 
-    const { hlsDir } = await convertStreamToHls(req, filename);
-    await uploadHlsDirectory(hlsDir, filename);
+    // const processMode = req.headers["x-process-mode"] || "hls";
+    const processMode = env.processMode;
+    let mediaInfo;
+
+    if (processMode === "hls") {
+      const { hlsDir } = await convertStreamToHls(req, filename);
+      await uploadMediaDirectory(hlsDir, filename);
+      mediaInfo = {
+        r2_key: `${filename}_index.m3u8`,
+        thumbnail_key: `${filename}_thumb.jpg`
+      };
+    } else {
+      const { mediaDir, outputFilename } = await optimizeMp4(req, filename, processMode);
+      await uploadMediaDirectory(mediaDir, filename);
+      mediaInfo = {
+        r2_key: outputFilename,
+        thumbnail_key: `${filename}_thumb.jpg`
+      };
+    }
 
     const result = await query(
       `
@@ -192,8 +219,8 @@ router.post("/upload", verifyToken, async (req, res) => {
       [
         req.user.id,
         filename,
-        `${filename}_index.m3u8`,
-        `${filename}_thumb.jpg`
+        mediaInfo.r2_key,
+        mediaInfo.thumbnail_key
       ]
     );
     console.log("uploaded vid:", filename);

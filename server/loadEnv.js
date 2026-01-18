@@ -14,4 +14,5 @@ export const env = {
     // Server Configuration
     port: process.env.PORT || 3001,
     frontendURL: process.env.FRONTEND_URL,
+    processMode: process.env.PROCESS_MODE,
 };
