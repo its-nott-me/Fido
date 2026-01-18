@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './ProfileSettings.css';
+import api from '../axios/axios.ts';
+import { env } from '../../loadenv.ts';
 
 interface ProfileSettingsProps {
     onClose: () => void;
@@ -28,20 +30,11 @@ export default function ProfileSettings({ onClose }: ProfileSettingsProps) {
         formData.append('image', file);
 
         try {
-            const response = await fetch('http://localhost:3001/api/auth/profile-image', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
+            const response = await api.post(`${env.API_URL}/api/auth/profile-image`, formData, {
+                headers: { 'Authorization': `Bearer ${token}` },
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                updateProfileImage(data.profileImageUrl);
-            } else {
-                alert('Failed to upload image');
-            }
+            updateProfileImage(response.data.profileImageUrl);
         } catch (err) {
             console.error('Upload error:', err);
             alert('Error uploading image');

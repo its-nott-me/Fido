@@ -11,7 +11,7 @@ export default function Hero() {
 
         let i = 0;
         let isDeleting = false;
-        let timeoutId;
+        let timeoutId: number;
 
         const el = textRef.current;
         if (!el) return;
@@ -63,12 +63,8 @@ export default function Hero() {
                 </h1>
                 <p className="hero-subtitle">
                     The ultimate platform for synchronized video experiences.
-                    Watch together, anytime, anywhere, in perfect harmony.
+                    Watch together, anytime, anywhere.
                 </p>
-                {/* <div className="hero-actions">
-                    <button className="nav-btn-primary hero-btn">Launch Simulator</button>
-                    <button className="glass-module hero-btn-secondary">Technical Specs</button>
-                </div> */}
             </div>
         </section>
     );

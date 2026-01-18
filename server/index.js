@@ -6,14 +6,17 @@ import mediaRouter from './routes/media.route.js';
 import authRouter from './routes/auth.route.js';
 import { query } from './db.js';
 import { initCleanupScheduler } from './services/cleanup.service.js';
+import { env } from './loadEnv.js';
 
 const app = express();
-app.use(cors({ origin: 'http://localhost:3000' }));
+app.use(cors({ origin: `${env.frontendURL}` }));
 app.use(express.json());
 
 const PORT = 3001;
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
+
+const getConnectedClientsCount = () => wss.clients.size;
 
 // In-memory session state
 const sessions = new Map();
@@ -296,6 +299,10 @@ wss.on('connection', (ws) => {
   ws.onerror = (error) => {
     console.error('WebSocket error:', error);
   };
+});
+
+app.get('/api/stats/connected-clients', (req, res) => {
+  res.json({ count: getConnectedClientsCount() });
 });
 
 app.use('/media', mediaRouter);

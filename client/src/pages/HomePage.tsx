@@ -3,13 +3,12 @@ import Features from '../components/Features';
 import VisualEffects from '../components/VisualEffects';
 import MockupHUD from '../components/MockupHUD';
 import './HomePage.css';
-import { Linkedin, Github } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub, faLinkedin } from '@fortawesome/free-brands-svg-icons';
 
 export default function HomePage() {
     return (
-        <div className="home-page landing-theme">
+        <div className="home-page">
             <VisualEffects />
 
             <Hero />
@@ -56,7 +55,7 @@ export default function HomePage() {
                                 Register
                             </button>
                             <button
-                                className="glass-module"
+                                className="nav-btn-primary glass-module"
                                 onClick={() => window.location.href = '/login'}
                             >
                                 Sign in

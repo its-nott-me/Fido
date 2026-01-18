@@ -80,6 +80,7 @@
     border: none;
     cursor: pointer;
     text-align: center;
+    margin: 1rem auto 0;
 }
 
 .auth-footer {

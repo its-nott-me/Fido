@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Medias Table (for Gallery)
 CREATE TABLE IF NOT EXISTS medias (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id),
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   filename TEXT NOT NULL,
   r2_key TEXT NOT NULL,
   thumbnail_key TEXT,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS medias (
 
 -- Sessions Table (for Persistence)
 CREATE TABLE IF NOT EXISTS sessions (
-  id VARCHAR(50) PRIMARY KEY,
+  id VARCHAR(100) PRIMARY KEY,
   host_id INTEGER REFERENCES users(id),
   r2_key TEXT, -- The video currently playing
   password VARCHAR(100), -- Optional
@@ -27,3 +27,22 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Auto update updated_on
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_sessions_updated_at
+BEFORE UPDATE ON sessions
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- indexes
+CREATE INDEX IF NOT EXISTS idx_medias_user_id ON medias(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_host_id ON sessions(host_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_active ON sessions(is_active);

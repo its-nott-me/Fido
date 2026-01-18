@@ -53,7 +53,7 @@
 .nav-btn-primary {
     background: var(--brand-primary);
     color: white;
-    padding: 0.6rem 1.2rem;
+    padding: 0.6rem 0.6rem;
     border-radius: 12px;
     text-decoration: none;
     font-weight: 600;
@@ -61,6 +61,7 @@
     transition: transform 0.2s;
     border: none;
     cursor: pointer;
+    text-align: center;
 }
 
 .nav-btn-primary:hover {
@@ -76,6 +77,11 @@
 
     .nav-links {
         gap: 1rem;
+    }
+
+    .register {
+        width: 7rem;
+        margin-right: 10px;
     }
 
     .nav-logo {

@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { env } from '../../loadenv';
+import api from '../axios/axios.ts';
 
 interface User {
     id: number;
@@ -39,16 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const fetchUserProfile = async (authToken: string, currentUser: User) => {
         try {
-            const response = await fetch('http://localhost:3001/api/auth/me', {
+            const response = await api.get(`${env.API_URL}/api/auth/me`, {
                 headers: {
                     'Authorization': `Bearer ${authToken}`
                 }
             });
-            if (response.ok) {
-                const fullUser = await response.json();
-                setUser(fullUser);
-                localStorage.setItem('user', JSON.stringify(fullUser));
-            }
+            const fullUser = await response.data;
+            setUser(fullUser);
+            localStorage.setItem('user', JSON.stringify(fullUser));
         } catch (err) {
             console.error('Failed to fetch profile:', err);
         } finally {

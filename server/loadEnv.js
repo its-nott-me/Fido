@@ -12,5 +12,6 @@ export const env = {
     databaseUrl: process.env.DATABASE_URL,
     jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
     // Server Configuration
-    port: process.env.PORT || 3001
+    port: process.env.PORT || 3001,
+    frontendURL: process.env.FRONTEND_URL,
 };

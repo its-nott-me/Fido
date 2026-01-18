@@ -11,6 +11,7 @@ import { faUserGear, faCommentDots, faCopy } from '@fortawesome/free-solid-svg-i
 import { useAuth } from '../context/AuthContext';
 import Chat from '../components/Chat';
 import ProfileSettings from '../components/ProfileSettings';
+import { env } from '../../loadenv';
 
 function generatePeerId() {
     return `peer-${Math.random().toString(36).substr(2, 9)}`;
@@ -57,7 +58,7 @@ export default function RoomPage() {
             }
         }
 
-        const ws = new WebSocket('ws://localhost:3001');
+        const ws = new WebSocket(`${env.WS_SERVER_URL}`);
         wsRef.current = ws;
 
         ws.onopen = () => {

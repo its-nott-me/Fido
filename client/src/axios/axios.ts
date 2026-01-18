@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { env } from '../../loadenv.ts';
 
 const instance = axios.create({
-    baseURL: 'http://localhost:3001',
+    baseURL: `${env.API_URL}`,
 });
 
 export default instance;

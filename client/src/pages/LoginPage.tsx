@@ -70,7 +70,7 @@ export default function LoginPage() {
                         disabled={isSubmitting}
                         className="nav-btn-primary auth-button"
                     >
-                        {isSubmitting ? 'Verifying...' : 'Login Server'}
+                        {isSubmitting ? 'Verifying...' : 'Login'}
                     </button>
                 </form>
 

@@ -1,7 +1,9 @@
 .features-section {
-    padding: 8rem 2rem;
+    padding: 3rem 2rem;
     max-width: var(--container-max);
     margin: 0 auto;
+    border-top: 2px solid rgba(243, 164, 255, 0.19);
+    border-bottom: 2px solid rgba(243, 164, 255, 0.19);
 }
 
 .features-header {

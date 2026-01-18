@@ -46,9 +46,7 @@
 .hero-title {
     font-size: clamp(3.5rem, 10vw, 6.5rem);
     font-weight: 800;
-    line-height: 0.95;
-    margin-bottom: 2rem;
-    letter-spacing: -4px;
+    margin-bottom: 1.5rem;
 }
 
 .gradient-text {

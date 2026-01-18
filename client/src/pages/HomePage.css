@@ -196,8 +196,7 @@
 }
 
 .footer {
-    padding: 3.5rem 2rem 3rem;
-    margin-top: 5rem;
+    padding: 3rem 2rem 3rem;
     border-top: 1px solid var(--glass-border);
 }
 
@@ -207,7 +206,7 @@
     text-align: center;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1.5rem;
     font-size: 0.85rem;
     color: var(--text-dim);
 }

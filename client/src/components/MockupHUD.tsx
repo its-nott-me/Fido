@@ -1,10 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import VideoPlayer from '../VideoPlayer';
+import axios from '../axios/axios.ts';
 import './MockupHUD.css';
 
 export default function MockupHUD() {
     const [progress, setProgress] = useState(0);
+    const [clientCount, setClientCount] = useState<number | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const fetchCount = async () => {
+            try {
+                const res = await axios.get('/api/stats/connected-clients');
+                setClientCount(res.data.count);
+            } catch (err) {
+                console.error('Failed to fetch client count:', err);
+            }
+        };
+
+        fetchCount();
+        const interval = setInterval(fetchCount, 1000); // Update every 10 seconds
+        return () => clearInterval(interval);
+    }, []);
+
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -34,7 +52,14 @@ export default function MockupHUD() {
                 </div>
                 <div className="mockup-title">FIDO // FEED_01</div>
                 <div className="mockup-stats">
-                    <span className="pulse"></span> 4 PEERS ACTIVE
+                    <span className="pulse"></span>
+                    {
+                        clientCount !== null ? (
+                            clientCount == 0 ?
+                                '4 PEERS ACTIVE' :
+                                `${clientCount} PEERS ACTIVE`)
+                            : 'LOADING...'
+                    }
                 </div>
             </div>
 
