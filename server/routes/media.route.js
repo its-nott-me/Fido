@@ -8,6 +8,7 @@ import { PassThrough } from "stream";
 import fs from 'fs';
 import path from 'path';
 import { env } from '../loadEnv.js';
+import { broadcastProgress } from '../index.js';
 
 const router = express.Router();
 
@@ -72,7 +73,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
 });
 
 // Upload media
-async function optimizeMp4(inputStream, filename, mode = "faststart") {
+async function optimizeMp4(inputStream, filename, mode = "faststart", clientId) {
   const mediaDir = path.join("/tmp", filename);
   fs.mkdirSync(mediaDir, { recursive: true });
 
@@ -81,7 +82,18 @@ async function optimizeMp4(inputStream, filename, mode = "faststart") {
     : "+faststart";
 
   return new Promise((resolve, reject) => {
+    let duration = 0;
     ffmpeg(inputStream)
+      .on('codecData', data => {
+        duration = parseFloat(data.duration.replace(/:/g, ''));
+      })
+      .on('progress', progress => {
+        if (clientId && progress.percent) {
+          // Scale 0-100% of encoding to 33.3% - 66.6% total
+          const totalProgress = 33.3 + (progress.percent * 0.333);
+          broadcastProgress(clientId, { progress: totalProgress, status: 'Processing video...' });
+        }
+      })
       .outputOptions([
         "-c copy",
         `-movflags ${movflags}`
@@ -97,18 +109,27 @@ async function optimizeMp4(inputStream, filename, mode = "faststart") {
         "-q:v 2",
       ])
 
-      .on("start", cmd => console.log("FFmpeg (Optimize):", cmd))
+      .on("start", cmd => console.log("FFmpeg (optimize mp4):", cmd))
       .on("error", reject)
-      .on("end", () => resolve({ mediaDir, outputFilename: `${filename}.mp4` }))
+      .on("end", () => {
+        if (clientId) broadcastProgress(clientId, { progress: 66.6, status: 'Syncing to cloud...' });
+        resolve({ mediaDir, outputFilename: `${filename}.mp4` });
+      })
       .run();
   });
 }
 
-async function convertStreamToHls(inputStream, filename) {
+async function convertStreamToHls(inputStream, filename, clientId) {
   const hlsDir = path.join("/tmp", filename);
   fs.mkdirSync(hlsDir, { recursive: true });
   return new Promise((resolve, reject) => {
     ffmpeg(inputStream)
+      .on('progress', progress => {
+        if (clientId && progress.percent) {
+          const totalProgress = 33.3 + (progress.percent * 0.333);
+          broadcastProgress(clientId, { progress: totalProgress, status: 'Converting to HLS...' });
+        }
+      })
       .videoCodec("libx264")
       .audioCodec("aac")
 
@@ -139,8 +160,10 @@ async function convertStreamToHls(inputStream, filename) {
 
 }
 
-async function uploadMediaDirectory(dir, filename) {
+async function uploadMediaDirectory(dir, filename, clientId) {
   const files = fs.readdirSync(dir);
+  const totalFiles = files.length;
+  let uploadedCount = 0;
 
   for (const file of files) {
     const filePath = path.join(dir, file);
@@ -161,6 +184,13 @@ async function uploadMediaDirectory(dir, filename) {
       fs.createReadStream(filePath),
       contentType
     );
+
+    uploadedCount++;
+    if (clientId) {
+      // Scale 66.6% - 100% based on file count
+      const totalProgress = 66.6 + ((uploadedCount / totalFiles) * 33.3);
+      broadcastProgress(clientId, { progress: totalProgress, status: `Uploading ${file}...` });
+    }
   }
 }
 
@@ -192,18 +222,19 @@ router.post("/upload", verifyToken, async (req, res) => {
 
     // const processMode = req.headers["x-process-mode"] || "hls";
     const processMode = env.processMode;
+    const clientId = req.headers["x-client-id"];
     let mediaInfo;
 
     if (processMode === "hls") {
-      const { hlsDir } = await convertStreamToHls(req, filename);
-      await uploadMediaDirectory(hlsDir, filename);
+      const { hlsDir } = await convertStreamToHls(req, filename, clientId);
+      await uploadMediaDirectory(hlsDir, filename, clientId);
       mediaInfo = {
         r2_key: `${filename}_index.m3u8`,
         thumbnail_key: `${filename}_thumb.jpg`
       };
     } else {
-      const { mediaDir, outputFilename } = await optimizeMp4(req, filename, processMode);
-      await uploadMediaDirectory(mediaDir, filename);
+      const { mediaDir, outputFilename } = await optimizeMp4(req, filename, processMode, clientId);
+      await uploadMediaDirectory(mediaDir, filename, clientId);
       mediaInfo = {
         r2_key: outputFilename,
         thumbnail_key: `${filename}_thumb.jpg`

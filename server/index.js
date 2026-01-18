@@ -20,6 +20,14 @@ const getConnectedClientsCount = () => wss.clients.size;
 
 // In-memory session state
 const sessions = new Map();
+const clients = new Map(); // Global registry for progress updates
+
+export function broadcastProgress(clientId, message) {
+  const ws = clients.get(clientId);
+  if (ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'upload-progress', ...message }));
+  }
+}
 
 function broadcast(sessionId, message, excludeWs = null) {
   const session = sessions.get(sessionId);
@@ -42,10 +50,17 @@ wss.on('connection', (ws) => {
       const message = JSON.parse(data.toString());
 
       switch (message.type) {
+        case 'register': {
+          peerId = message.peerId;
+          ws.peerId = peerId;
+          clients.set(peerId, ws);
+          break;
+        }
         case 'join': {
           const sessionId = message.sessionId || 'default-session';
           peerId = message.peerId;
           ws.peerId = peerId;
+          clients.set(peerId, ws);
 
           // Try to load from memory first
           let session = sessions.get(sessionId);
@@ -264,6 +279,7 @@ wss.on('connection', (ws) => {
       const session = sessions.get(currentSession);
       if (session) {
         session.clients.delete(ws);
+        if (ws.peerId) clients.delete(ws.peerId);
 
         // Get remaining peer IDs
         const remainingPeers = Array.from(session.clients)

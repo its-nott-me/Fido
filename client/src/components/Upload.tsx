@@ -1,14 +1,22 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import axios from '../axios/axios';
 import { useAuth } from '../context/AuthContext';
+import { env } from '../../loadenv';
 import './Upload.css';
+
+function generatePeerId() {
+    return `peer-${Math.random().toString(36).substr(2, 9)}`;
+}
 
 export default function Upload({ onUploadSuccess }: { onUploadSuccess: () => void }) {
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [status, setStatus] = useState<string>('');
+    const [peerId] = useState(generatePeerId());
     const targetProgress = useRef(0);
     const rafRef = useRef<number | null>(null); // request animation frame --> raf
+    const wsRef = useRef<WebSocket | null>(null);
     const [error, setError] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { token } = useAuth();
@@ -23,11 +31,34 @@ export default function Upload({ onUploadSuccess }: { onUploadSuccess: () => voi
     const resetInput = () => {
         setFile(null);
         setProgress(0);
+        setStatus('');
         setError('');
-        if(fileInputRef.current){
+        if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
     };
+
+    useEffect(() => {
+        const ws = new WebSocket(`${env.WS_SERVER_URL}`);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+            ws.send(JSON.stringify({ type: 'register', peerId }));
+        };
+
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            if (message.type === 'upload-progress') {
+                targetProgress.current = message.progress;
+                if (message.status) setStatus(message.status);
+                startProgressAnimation();
+            }
+        };
+
+        return () => {
+            ws.close();
+        };
+    }, [peerId]);
 
     const startProgressAnimation = () => {
         if (rafRef.current) return;
@@ -55,42 +86,42 @@ export default function Upload({ onUploadSuccess }: { onUploadSuccess: () => voi
     };
 
     const handleUpload = async () => {
-    if (!file) return;
+        if (!file) return;
 
-    setUploading(true);
-    setProgress(0);
-    setError("");
+        setUploading(true);
+        setProgress(0);
+        setError("");
 
-    try {
-        await axios.post("/media/upload", file, {
-        headers: {
-            "Content-Type": file.type,
-            "Content-Length": file.size,
-            Authorization: `Bearer ${token}`,
-            "X-Filename": file.name,
-        },
-        onUploadProgress: (e) => {
-            if (!e.total) return;
-            targetProgress.current = Math.min(
-                Math.round((e.loaded / e.total) * 100),
-                95
-            );
-            startProgressAnimation();
-        },
-        });
+        try {
+            setStatus('Uploading to server...');
+            await axios.post("/media/upload", file, {
+                headers: {
+                    "Content-Type": file.type,
+                    "Content-Length": file.size,
+                    Authorization: `Bearer ${token}`,
+                    "X-Filename": file.name,
+                    "X-Client-Id": peerId,
+                },
+                onUploadProgress: (e) => {
+                    if (!e.total) return;
+                    // Scale local upload to 33.3%
+                    targetProgress.current = (e.loaded / e.total) * 33.3;
+                    startProgressAnimation();
+                },
+            });
 
-        targetProgress.current = 100;
-        setProgress(100);
-        onUploadSuccess();
-        resetInput();
+            targetProgress.current = 100;
+            setStatus('Done!');
+            onUploadSuccess();
+            resetInput();
 
-    } catch (err: any) {
-        console.error(err);
-        setError(err.response?.data?.error || "Upload failed");
-    } finally {
-        stopProgressAnimation();
-        setUploading(false);
-    }
+        } catch (err: any) {
+            console.error(err);
+            setError(err.response?.data?.error || "Upload failed");
+        } finally {
+            stopProgressAnimation();
+            setUploading(false);
+        }
     };
 
     return (
@@ -130,8 +161,11 @@ export default function Upload({ onUploadSuccess }: { onUploadSuccess: () => voi
                     </div>
 
                     {uploading ? (
-                        <div className="progress-bar-container">
-                            <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
+                        <div className="progress-section">
+                            <div className="progress-bar-container">
+                                <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
+                            </div>
+                            <div className="upload-status">{status}</div>
                         </div>
                     ) : (
                         <div className="upload-actions">
