@@ -5,6 +5,7 @@ import MockupHUD from '../components/MockupHUD';
 import './HomePage.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub, faLinkedin } from '@fortawesome/free-brands-svg-icons';
+import { Link } from 'react-router-dom';
 
 export default function HomePage() {
     return (
@@ -48,18 +49,18 @@ export default function HomePage() {
                             Create a room, upload media, and sync across devices.
                         </p>
                         <div className="cta-buttons">
-                            <button
+                            <Link
                                 className="nav-btn-primary"
-                                onClick={() => window.location.href = '/register'}
+                                to='/register'
                             >
                                 Register
-                            </button>
-                            <button
+                            </Link>
+                            <Link
                                 className="nav-btn-primary glass-module"
-                                onClick={() => window.location.href = '/login'}
+                                to='/login'
                             >
                                 Sign in
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </section>
