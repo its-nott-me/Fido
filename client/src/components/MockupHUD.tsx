@@ -2,24 +2,27 @@ import { useEffect, useRef, useState } from 'react';
 import VideoPlayer from '../VideoPlayer';
 import axios from '../axios/axios.ts';
 import './MockupHUD.css';
+import { usePresence } from '../context/PresenceContext.tsx';
 
 export default function MockupHUD() {
     const [progress, setProgress] = useState(0);
     const [clientCount, setClientCount] = useState<number | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-
+    const { activeClients, connected } = usePresence();
+    // { connected && console.log(activeClients) }
     useEffect(() => {
         const fetchCount = async () => {
             try {
                 const res = await axios.get('/api/stats/connected-clients');
                 setClientCount(res.data.count);
+                // console.log(res.data);
             } catch (err) {
                 console.error('Failed to fetch client count:', err);
             }
         };
 
         fetchCount();
-        const interval = setInterval(fetchCount, 1000); // Update every 10 seconds
+        const interval = setInterval(fetchCount, 1000); // Update every 1 seconds
         return () => clearInterval(interval);
     }, []);
 
@@ -54,11 +57,11 @@ export default function MockupHUD() {
                 <div className="mockup-stats">
                     <span className="pulse"></span>
                     {
-                        clientCount !== null ? (
-                            clientCount == 0 ?
-                                '4 PEERS ACTIVE' :
-                                `${clientCount} PEERS ACTIVE`)
-                            : 'LOADING...'
+                        (activeClients !== null && connected) ? (
+                            activeClients == 0 ?
+                                '0 PEERS ACTIVE' :
+                                `${activeClients} PEERS ACTIVE`
+                        ) : 'LOADING...'
                     }
                 </div>
             </div>

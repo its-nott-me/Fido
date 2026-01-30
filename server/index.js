@@ -45,6 +45,9 @@ wss.on('connection', (ws) => {
   let currentSession = null;
   let peerId = null;
 
+  ws.isPresence = false;
+  ws.lastSeen = Date.now();
+
   ws.on('message', async (data) => {
     try {
       const message = JSON.parse(data.toString());
@@ -56,6 +59,29 @@ wss.on('connection', (ws) => {
           clients.set(peerId, ws);
           break;
         }
+
+        case 'presence-join': {
+          ws.isPresence = true;
+
+          const count = [...wss.clients].filter(
+            client => client.readyState == 1 && client.isPresence
+          ).length;
+
+          wss.clients.forEach(client => {
+            client.send(JSON.stringify({
+              type: 'presence-count',
+              count
+            }));
+          })
+          // console.log(count);
+          break;
+        }
+
+        case 'presence-heartbeat': {
+          ws.lastSeen = Date.now();
+          break;
+        }
+
         case 'join': {
           const sessionId = message.sessionId || 'default-session';
           peerId = message.peerId;
@@ -309,6 +335,20 @@ wss.on('connection', (ws) => {
           });
         }
       }
+    }
+
+    if (ws.isPresence) {
+      ws.isPresence = false;
+      const count = [...wss.clients].filter(
+        client => client.readyState == 1 && client.isPresence
+      ).length;
+
+      wss.clients.forEach(client => {
+        client.send(JSON.stringify({
+          type: 'presence-count',
+          count
+        }));
+      })
     }
   });
 
