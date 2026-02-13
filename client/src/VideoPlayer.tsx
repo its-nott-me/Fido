@@ -11,6 +11,7 @@ interface VideoPlayerProps {
   syncEnabled: boolean;
   onSyncToggle: (enabled: boolean) => void;
   isMockView: boolean;
+  onVideoReady?: () => void;
   // savedPosition: number | null;
   // onResumePosition: () => void;
   // onDismissResume: () => void;
@@ -25,6 +26,7 @@ export default function VideoPlayer({
   syncEnabled,
   onSyncToggle,
   isMockView = false,
+  onVideoReady,
   // savedPosition,
   // onResumePosition,
   // onDismissResume
@@ -196,11 +198,12 @@ export default function VideoPlayer({
           autoPlay={isMockView}
           onLoadedData={() => {
             console.log('VideoPlayer: Video loaded successfully');
+            onVideoReady?.();
           }}
         />
       </div>
       {/* Buffer Health Bar */}
-      <div
+      {/* <div
         style={{
           position: 'absolute',
           top: 0,
@@ -220,7 +223,7 @@ export default function VideoPlayer({
             transition: 'width 0.3s, background-color 0.3s'
           }}
         />
-      </div>
+      </div> */}
 
       {/* Buffering Overlay */}
       {/* {_buffering && (
@@ -308,7 +311,7 @@ export default function VideoPlayer({
       )} */}
 
       {/* Sync Quality Indicator */}
-      <div
+      {/* <div
         style={{
           position: 'absolute',
           top: 16,
@@ -321,7 +324,7 @@ export default function VideoPlayer({
         }}
       >
         {getSyncDots()}
-      </div>
+      </div> */}
 
       {/* Host Badge */}
       {isHost && (

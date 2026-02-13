@@ -26,6 +26,7 @@ export default function RoomPage() {
     const [isHost, setIsHost] = useState(false);
     const [syncEnabled, setSyncEnabled] = useState(true);
     const [hasInteracted, setHasInteracted] = useState(false);
+    const [videoReady, setVideoReady] = useState(false);
     // const [savedPosition, setSavedPosition] = useState<number | null>(null);
     // const [showResumeUI, setShowResumeUI] = useState(false);
     const [peerId] = useState(generatePeerId());
@@ -40,7 +41,9 @@ export default function RoomPage() {
     const [passwordInput, setPasswordInput] = useState('');
     const [messages, setMessages] = useState<any[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
-    const [showChat, setShowChat] = useState(false);
+    const [showChat, setShowChat] = useState(window.innerWidth < 1024); // Default to open on mobile
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
     const [showProfile, setShowProfile] = useState(false);
     const [copied, setCopied] = useState(false);
     const heartbeatIntervalRef = useRef<number | null>(null);
@@ -131,6 +134,7 @@ export default function RoomPage() {
 
                     case 'media-changed':
                         setCurrentMediaId(message.mediaId);
+                        setVideoReady(false); // Reset video ready state for new media
                         break;
 
                     case 'webrtc-offer':
@@ -176,6 +180,16 @@ export default function RoomPage() {
     }, [peerId, sessionId, mediaIdFromUrl, initialPassword]);
 
     useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth < 1024;
+            setIsMobile(mobile);
+            if (mobile) setShowChat(true);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
         if (!sessionId) {
             navigate('/');
             return;
@@ -192,6 +206,7 @@ export default function RoomPage() {
             wsRef.current?.close();
         };
     }, [sessionId, navigate, connect]);
+
 
     const handlePasswordSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -271,7 +286,8 @@ export default function RoomPage() {
 
     return (
         <div className="room-page">
-            <header className="room-header glass-module">
+            <header className="room-header glass-module desktop-only">
+
                 <div className="room-info">
                     <h1>ID: {sessionId} {" "}
                         <FontAwesomeIcon
@@ -321,33 +337,14 @@ export default function RoomPage() {
 
             {showProfile && <ProfileSettings onClose={() => setShowProfile(false)} />}
 
-            <button
-                className={`chat-toggle-btn ${showChat ? 'active' : ''}`}
-                onClick={() => {
-                    setShowChat(!showChat);
-                    if (!showChat) setUnreadCount(0);
-                }}
-            >
-                <FontAwesomeIcon icon={faCommentDots} />
-                {unreadCount > 0 && !showChat && <span className="chat-badge">{unreadCount}</span>}
-            </button>
-
-            {showChat && (
-                <Chat
-                    messages={messages}
-                    onSendMessage={handleSendMessage}
-                    onClose={() => setShowChat(false)}
-                />
-            )}
-
             <main className="player-container glass-module">
-                <div className="mockup-header">
+                <div className="mockup-header desktop-only">
                     <div className="mockup-controls">
                         <span className="dot red"></span>
                         <span className="dot yellow"></span>
                         <span className="dot green"></span>
                     </div>
-                    <div className="mockup-title">FIDO // FEED_{sessionId?.toUpperCase()}</div>
+                    {/* <div className="mockup-title">FIDO // FEED_{sessionId?.toUpperCase()}</div> */}
                     <div className="mockup-stats">
                         <span className="pulse"></span> {webrtcConnections.length + 1} PEERS ACTIVE
                     </div>
@@ -365,6 +362,7 @@ export default function RoomPage() {
                                 syncEnabled={syncEnabled}
                                 onSyncToggle={handleSyncToggle}
                                 isMockView={false}
+                                onVideoReady={() => setVideoReady(true)}
                             // savedPosition={showResumeUI ? savedPosition : null}
                             // onResumePosition={handleResumePosition}
                             // onDismissResume={handleDismissResume}
@@ -382,26 +380,84 @@ export default function RoomPage() {
                         <div className="hud-line bottom-left"></div>
                         <div className="hud-line bottom-right"></div>
 
-                        <div className="hud-data-box hud-box-move">
+                        {/* <div className="hud-data-box hud-box-move">
                             <div className="data-row"><span>SYNC</span> [{syncEnabled ? 'ENABLED' : 'OFFLINE'}]</div>
                             <div className="data-row"><span>PEER</span> [{peerId.split('-')[1].toUpperCase()}]</div>
                             <div className="data-row"><span>HOST</span> [{isHost ? 'SELF' : 'REMOTE'}]</div>
-                        </div>
+                        </div> */}
                     </div>
 
                     {!hasInteracted && connected && (
                         <div className="interaction-overlay">
-                            <button
-                                onClick={handleJoinClick}
-                                className="nav-btn-primary btn-join-session"
-                            >
-                                WATCH NOW!
-                            </button>
+                            {!videoReady ? (
+                                <div className="video-loader">
+                                    <div className="loader-spinner"></div>
+                                    <p>Loading video...</p>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleJoinClick}
+                                    className="nav-btn-primary btn-join-session"
+                                >
+                                    WATCH NOW!
+                                </button>
+                            )}
                         </div>
                     )}
 
                 </div>
             </main>
+
+            {/* Mobile-only actions bar - integrated between video and chat */}
+            <div className="mobile-actions-bar mobile-only">
+                <button
+                    onClick={() => navigator.clipboard.writeText(window.location.href)}
+                    className="mobile-action-btn"
+                >
+                    <FontAwesomeIcon icon={faCopy} />
+                    <span>Invite</span>
+                </button>
+
+                {isHost && (
+                    <button
+                        onClick={() => setShowGallery(!showGallery)}
+                        className="mobile-action-btn"
+                    >
+                        <FontAwesomeIcon icon={faCommentDots} />
+                        <span>Media</span>
+                    </button>
+                )}
+
+                <button
+                    onClick={() => setShowProfile(true)}
+                    className="mobile-action-btn"
+                >
+                    <FontAwesomeIcon icon={faUserGear} />
+                    <span>Profile</span>
+                </button>
+            </div>
+
+            {!isMobile && !showChat && (
+                <button
+                    className={`chat-toggle-btn ${showChat ? 'active' : ''}`}
+                    onClick={() => {
+                        setShowChat(!showChat);
+                        if (!showChat) setUnreadCount(0);
+                    }}
+                >
+                    <FontAwesomeIcon icon={faCommentDots} />
+                    {unreadCount > 0 && !showChat && <span className="chat-badge">{unreadCount}</span>}
+                </button>
+            )}
+
+            {(showChat || isMobile) && (
+                <Chat
+                    messages={messages}
+                    onSendMessage={handleSendMessage}
+                    onClose={() => setShowChat(false)}
+                />
+            )}
+
 
             {showGallery && isHost && (
                 <div className="gallery-overlay glass-module">
