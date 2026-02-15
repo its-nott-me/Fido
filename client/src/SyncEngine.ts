@@ -139,10 +139,16 @@ export class SyncEngine {
     // Listen to video events
     video.addEventListener('play', this.handleLocalPlay);
     video.addEventListener('pause', this.handleLocalPause);
+    video.addEventListener('seeking', this.handleSeeking);
     video.addEventListener('seeked', this.handleLocalSeek);
     video.addEventListener('waiting', this.handleBuffering);
     video.addEventListener('canplay', this.handleCanPlay);
   }
+
+  private handleSeeking = () => {
+    // Optinoal: log or handle the start of a seek
+  };
+
 
   setIsHost(isHost: boolean) {
     this.isHost = isHost;
@@ -421,7 +427,10 @@ export class SyncEngine {
 
     // State convergence: if we are stalled (paused but host is playing) 
     // and drift is growing, force a command update
-    if (snapshot.playing && this.videoElement.paused && Math.abs(this.currentDrift) > 1.0) {
+    // CRITICAL: Only force resync if NOT manually seeking
+    const isSeeking = this.videoElement.seeking;
+
+    if (!isSeeking && snapshot.playing && this.videoElement.paused && Math.abs(this.currentDrift) > 1.2) {
       console.log(`[Sync] State mismatch detected (Peer: Paused, Host: Playing). Forcing resync...`);
       this.handleCommand({
         playing: true,
@@ -430,7 +439,7 @@ export class SyncEngine {
       }, snapshot.version);
     }
     // Conversly, if host is paused but we are playing
-    else if (!snapshot.playing && !this.videoElement.paused && Math.abs(this.currentDrift) > 1.0) {
+    else if (!isSeeking && !snapshot.playing && !this.videoElement.paused && Math.abs(this.currentDrift) > 1.2) {
       console.log(`[Sync] State mismatch detected (Peer: Playing, Host: Paused). Forcing pause...`);
       this.handleCommand({
         playing: false,
@@ -438,6 +447,7 @@ export class SyncEngine {
         timestamp: snapshot.timestamp
       }, snapshot.version);
     }
+
 
     // Update last snapshot for drift calculations
     this.lastSnapshot = snapshot;
@@ -547,9 +557,11 @@ export class SyncEngine {
     if (this.videoElement) {
       this.videoElement.removeEventListener('play', this.handleLocalPlay);
       this.videoElement.removeEventListener('pause', this.handleLocalPause);
+      this.videoElement.removeEventListener('seeking', this.handleSeeking);
       this.videoElement.removeEventListener('seeked', this.handleLocalSeek);
       this.videoElement.removeEventListener('waiting', this.handleBuffering);
       this.videoElement.removeEventListener('canplay', this.handleCanPlay);
     }
+
   }
 }
