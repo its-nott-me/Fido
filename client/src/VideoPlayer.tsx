@@ -36,7 +36,7 @@ export default function VideoPlayer({
   const [_strategy, setStrategy] = useState<DriftStrategy>('locked');
   const [showResyncUI, setShowResyncUI] = useState(false);
   const [_buffering, setBuffering] = useState(false);
-  const [bufferHealth, setBufferHealth] = useState(1);
+  // const [bufferHealth, setBufferHealth] = useState(1);
   const [mediaUrl, setMediaUrl] = useState('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8');
   const { token } = useAuth();
 
@@ -62,9 +62,9 @@ export default function VideoPlayer({
         setShowResyncUI(newStrategy === 'show-ui' || newStrategy === 'force-resync');
       };
 
-      syncEngine.onBufferStatus = (isBuffering, health) => {
+      syncEngine.onBufferStatus = (isBuffering, _health) => {
         setBuffering(isBuffering);
-        setBufferHealth(health);
+        // setBufferHealth(health);
       };
 
       return () => {
@@ -127,27 +127,27 @@ export default function VideoPlayer({
     setShowResyncUI(false);
   };
 
-  const getSyncDots = () => {
-    const absDrift = Math.abs(drift);
-    let filledDots = 5;
-    if (absDrift > 5) filledDots = 1;
-    else if (absDrift > 2) filledDots = 2;
-    else if (absDrift > 1) filledDots = 3;
-    else if (absDrift > 0.4) filledDots = 4;
+  // const getSyncDots = () => {
+  //   const absDrift = Math.abs(drift);
+  //   let filledDots = 5;
+  //   if (absDrift > 5) filledDots = 1;
+  //   else if (absDrift > 2) filledDots = 2;
+  //   else if (absDrift > 1) filledDots = 3;
+  //   else if (absDrift > 0.4) filledDots = 4;
 
-    return Array(5).fill(0).map((_, i) => (
-      <div
-        key={i}
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          backgroundColor: i < filledDots ? '#4ade80' : '#374151',
-          transition: 'background-color 0.3s'
-        }}
-      />
-    ));
-  };
+  //   return Array(5).fill(0).map((_, i) => (
+  //     <div
+  //       key={i}
+  //       style={{
+  //         width: 8,
+  //         height: 8,
+  //         borderRadius: '50%',
+  //         backgroundColor: i < filledDots ? '#4ade80' : '#374151',
+  //         transition: 'background-color 0.3s'
+  //       }}
+  //     />
+  //   ));
+  // };
 
   const getMediaUrl = async (id: string) => {
     try {

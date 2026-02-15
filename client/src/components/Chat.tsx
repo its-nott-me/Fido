@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Chat.css';
 import { useAuth } from '../context/AuthContext';
+import { TextWithEmoji } from '../utils/TextWithEmoji';
 
 interface Message {
     peerId: string;
@@ -256,7 +257,7 @@ export default function Chat({ messages, onSendMessage, onClose }: Omit<ChatProp
                                     <span className="message-username">{msg.username}</span>
                                     <span className="message-time">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 </div>
-                                <div className="message-text">{msg.text}</div>
+                                <div className="message-text"><TextWithEmoji text={msg.text} /></div>
                             </div>
                         </div>
                     </div>

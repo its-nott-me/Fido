@@ -7,7 +7,7 @@ import { SyncEngine } from '../SyncEngine';
 import { WebRTCManager } from '../WebRTCManager';
 import './RoomPage.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserGear, faCommentDots, faCopy } from '@fortawesome/free-solid-svg-icons';
+import { faUserGear, faCommentDots, faCopy, faImages } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../context/AuthContext';
 import Chat from '../components/Chat';
 import ProfileSettings from '../components/ProfileSettings';
@@ -423,7 +423,7 @@ export default function RoomPage() {
                         onClick={() => setShowGallery(!showGallery)}
                         className="mobile-action-btn"
                     >
-                        <FontAwesomeIcon icon={faCommentDots} />
+                        <FontAwesomeIcon icon={faImages} />
                         <span>Media</span>
                     </button>
                 )}

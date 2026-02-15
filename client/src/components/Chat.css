@@ -28,8 +28,6 @@
     align-items: center;
 }
 
-
-
 .chat-close-btn {
     background: transparent;
     border: none;
@@ -203,24 +201,12 @@
     }
 
     .chat-header {
-        padding: 6px 1rem;
-        background: rgba(0, 255, 255, 0.05);
-        border-bottom: 1px solid rgba(0, 255, 255, 0.05);
-    }
-
-    .chat-header h3 {
-        font-size: 0.8rem;
-        opacity: 0.8;
+        display: none;
     }
 
     .chat-messages {
         padding: 0.5rem;
         gap: 8px;
-    }
-
-    .chat-close-btn {
-        display: none;
-        /* Mobile view typically doesn't close the chat panel if it's part of the stack */
     }
 }
 
