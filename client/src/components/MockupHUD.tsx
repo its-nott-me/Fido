@@ -6,7 +6,7 @@ import { usePresence } from '../context/PresenceContext.tsx';
 
 export default function MockupHUD() {
     const [progress, setProgress] = useState(0);
-    const [clientCount, setClientCount] = useState<number | null>(null);
+    const [_clientCount, setClientCount] = useState<number | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const { activeClients, connected } = usePresence();
     // { connected && console.log(activeClients) }
