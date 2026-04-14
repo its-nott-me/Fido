@@ -82,6 +82,7 @@ async function optimizeMp4(inputStream, filename, mode = "faststart", clientId) 
     : "+faststart";
 
   return new Promise((resolve, reject) => {
+    let duration = 0;
     ffmpeg(inputStream)
       .on('codecData', data => {
         duration = parseFloat(data.duration.replace(/:/g, ''));
