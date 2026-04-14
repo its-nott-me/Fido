@@ -42,6 +42,11 @@ export const TextWithEmoji = ({ text }: { text: string }) => {
                     alt={emojiData["default"] ? baseEmoji : ""}
                     width={28}
                     style={{ display: "inline-block", verticalAlign: "middle" }}
+                    onError={e => {
+                        const img = e.currentTarget;
+                        img.removeAttribute("src");
+                        img.onerror = null;
+                    }}
                 />
             );
         } else {

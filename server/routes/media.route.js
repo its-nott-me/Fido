@@ -82,7 +82,6 @@ async function optimizeMp4(inputStream, filename, mode = "faststart", clientId) 
     : "+faststart";
 
   return new Promise((resolve, reject) => {
-    let duration = 0;
     ffmpeg(inputStream)
       .on('codecData', data => {
         duration = parseFloat(data.duration.replace(/:/g, ''));
@@ -95,7 +94,11 @@ async function optimizeMp4(inputStream, filename, mode = "faststart", clientId) 
         }
       })
       .outputOptions([
-        "-c copy",
+        "-c:v libx264",
+        "-c:a aac",
+        "-preset veryfast",
+        "-crf 23",
+        "-pix_fmt yuv420p",
         `-movflags ${movflags}`
       ])
       // ===== MP4 output =====
