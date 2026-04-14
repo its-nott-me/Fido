@@ -95,11 +95,7 @@ async function optimizeMp4(inputStream, filename, mode = "faststart", clientId) 
         }
       })
       .outputOptions([
-        "-c:v libx264",
-        "-c:a aac",
-        "-preset veryfast",
-        "-crf 23",
-        "-pix_fmt yuv420p",
+        "-c copy",
         `-movflags ${movflags}`
       ])
       // ===== MP4 output =====
